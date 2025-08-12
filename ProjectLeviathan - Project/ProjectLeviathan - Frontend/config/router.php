@@ -15,7 +15,10 @@ class Router {
     ];
 
     public static function getCurrentRoute() {
-        $requestUri = $_SERVER['REQUEST_URI'];
+        // --- MODIFICACIÓN CLAVE AQUÍ ---
+        // Se decodifica la URL para convertir los '%20' en espacios.
+        $requestUri = urldecode($_SERVER['REQUEST_URI']);
+        
         $scriptName = $_SERVER['SCRIPT_NAME'];
         
         // Remover el directorio base del proyecto
