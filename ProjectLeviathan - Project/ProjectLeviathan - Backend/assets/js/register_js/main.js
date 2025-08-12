@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // --- RUTA AL SCRIPT DE PROCESAMIENTO ---
-    const logicUrl = 'config/register_config/register_process.php';
+    const logicUrl = '../config/register_config/register_process.php';
 
     /**
      * Obtiene y establece el token CSRF al cargar la página.
