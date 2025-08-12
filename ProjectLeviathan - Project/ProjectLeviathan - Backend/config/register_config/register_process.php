@@ -141,8 +141,9 @@ if ($action === 'verify_account') {
                 function generate_uuid() {
                     return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0x0fff) | 0x4000, mt_rand(0, 0x3fff) | 0x8000, mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff));
                 }
-                $stmt_user = $pdo->prepare("INSERT INTO users (uuid, username, email, phone_number, password) VALUES (:uuid, :user, :email, :phone, :pass)");
-                $stmt_user->execute(['uuid' => generate_uuid(), 'user' => $reg_data['username'], 'email' => $reg_data['email'], 'phone' => $reg_data['full_phone'], 'pass' => $reg_data['hashed_password']]);
+                // -- MODIFIED SQL INSERT STATEMENT --
+                $stmt_user = $pdo->prepare("INSERT INTO users (uuid, username, email, phone_number, password, role) VALUES (:uuid, :user, :email, :phone, :pass, :role)");
+                $stmt_user->execute(['uuid' => generate_uuid(), 'user' => $reg_data['username'], 'email' => $reg_data['email'], 'phone' => $reg_data['full_phone'], 'pass' => $reg_data['hashed_password'], 'role' => 'user']);
                 $user_id = $pdo->lastInsertId();
 
                 $stmt_meta = $pdo->prepare("INSERT INTO users_metadata (user_id, ip_address, user_agent) VALUES (:id, :ip, :agent)");
