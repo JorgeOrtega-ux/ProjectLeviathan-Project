@@ -20,9 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- RUTA AL SCRIPT DE PROCESAMIENTO ---
     const logicUrl = '../config/register_config/register_process.php';
 
-    /**
-     * Obtiene y establece el token CSRF al cargar la página.
-     */
     async function fetchCsrfToken() {
         try {
             const formData = new FormData();
@@ -39,9 +36,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /**
-     * Muestra un mensaje de error en la interfaz.
-     */
     function showError(message, fieldIds = []) {
         errorText.textContent = message;
         errorContainer.classList.remove('disabled');
@@ -56,9 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    /**
-     * Oculta el contenedor de errores.
-     */
     function hideError() {
         errorContainer.classList.add('disabled');
         errorContainer.classList.remove('active');
@@ -66,9 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.error-border').forEach(el => el.classList.remove('error-border'));
     }
 
-    /**
-     * Cambia a una etapa específica del formulario.
-     */
     function goToStage(stageId) {
         stages.forEach(stage => {
             stage.classList.add('disabled');
@@ -81,9 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /**
-     * Valida los campos requeridos en una etapa específica del formulario.
-     */
     function validateStage(stageId) {
         const stage = document.getElementById(stageId);
         if (!stage) return false;
@@ -114,15 +99,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
     
-    /**
-     * Maneja las solicitudes fetch al backend.
-     */
     async function handleFetch(url, formData, button) {
         button.disabled = true;
         button.classList.add('btn-loading');
         hideError();
         try {
-            // Adjunta el token CSRF a todos los FormData antes de enviarlos
             formData.append('csrf_token', csrfTokenInput.value);
 
             const response = await fetch(url, { method: 'POST', body: formData });
@@ -138,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- EVENT LISTENER PRINCIPAL PARA LAS ACCIONES DEL FORMULARIO ---
     form.addEventListener('click', async function(e) {
         const button = e.target.closest('button[data-action]');
         if (!button) return;
@@ -146,7 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const action = button.getAttribute('data-action');
         const currentStage = button.closest('.register-stage');
         
-        // ETAPA 1 -> ETAPA 2
         if (action === 'next-stage') {
             if (!validateStage(currentStage.id)) return;
             const formData = new FormData();
@@ -161,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // ETAPA 2 -> ETAPA 3
         if (action === 'submit-register') {
             if (!validateStage('stage-1') || !validateStage('stage-2')) return;
 
@@ -176,7 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // ETAPA 3 -> FINAL
         if (action === 'submit-verification') {
             if (!validateStage(currentStage.id)) return;
             
@@ -186,18 +163,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const result = await handleFetch(logicUrl, formData, button);
             if (result.success) {
-                currentStage.innerHTML = `
-                    <h1>¡Cuenta verificada!</h1>
-                    <p class="verification-text">${result.message}</p>
-                    <a href="../login/" class="continue-btn" style="text-decoration: none; text-align: center; line-height: 52px;"><span>Ir a Iniciar Sesión</span></a>
-                `;
+                if (result.redirect_url) {
+                    window.location.href = result.redirect_url;
+                }
             } else {
                 showError(result.message || 'Error al verificar el código.', ['verification_code']);
             }
         }
     });
 
-    // --- MANEJO DE ENTRADAS, CONTRASEÑA Y SELECTOR DE PAÍS ---
     form.addEventListener('focus', e => e.target.matches('.input-field') && hideError(), true);
     form.addEventListener('input', e => {
         const input = e.target;
@@ -237,6 +211,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- INICIALIZACIÓN ---
     fetchCsrfToken();
 });

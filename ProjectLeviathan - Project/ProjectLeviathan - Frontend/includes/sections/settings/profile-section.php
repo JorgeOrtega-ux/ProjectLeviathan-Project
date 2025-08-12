@@ -1,3 +1,7 @@
+<?php
+$userRole = $_SESSION['role'] ?? 'user';
+$rankDetails = getRankDetails($userRole);
+?>
 <div class="section-content overflow-y <?php echo $CURRENT_SUBSECTION === 'profile' ? 'active' : 'disabled'; ?>" data-section="sectionProfile">
     <div class="settings-container">
         <div class="profile-card">
@@ -18,68 +22,36 @@
                     </div>
                 </div>
                 <div class="emblem-container">
-                    <div class="emblem-content rank-owner">
-                        <span class="material-symbols-rounded">shield</span>
-                        <span>Propietario</span>
+                    <div class="emblem-content <?php echo htmlspecialchars($rankDetails['class']); ?>">
+                        <span class="material-symbols-rounded"><?php echo htmlspecialchars($rankDetails['icon']); ?></span>
+                        <span><?php echo htmlspecialchars($rankDetails['name']); ?></span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="profile-card">
-            <div class="profile-card-item with-divider" data-section="name">
-                <div class="view-state">
-                    <div class="profile-card-content">
-                        <div class="profile-card-info">
-                            <strong>Nombre</strong>
-                            <span>Ortega Aguilar Jorge</span>
-                        </div>
-                    </div>
-                    <button class="edit-button" data-action="toggleEditState">Editar</button>
-                </div>
-                <div class="edit-state hidden">
+            <div class="profile-card-item with-divider">
+                <div class="profile-card-content">
                     <div class="profile-card-info">
-                        <strong>Nombre</strong>
-                        <div class="edit-input-group">
-                            <input type="text" class="edit-input" value="Ortega Aguilar Jorge">
-                            <div class="edit-actions">
-                                <button class="cancel-button" data-action="toggleViewState">Cancelar</button>
-                                <button class="save-button" data-action="toggleViewState">Guardar</button>
-                            </div>
-                        </div>
+                        <strong>Nombre de usuario</strong>
+                        <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'No disponible'); ?></span>
                     </div>
                 </div>
             </div>
-            <div class="profile-card-item with-divider" data-section="email">
-                <div class="view-state">
-                    <div class="profile-card-content">
-                        <div class="profile-card-info">
-                            <strong>Correo electrónico</strong>
-                            <span>jorge1ortega.484@gmail.com</span>
-                        </div>
-                    </div>
-                    <button class="edit-button" data-action="toggleEditState">Editar</button>
-                </div>
-                <div class="edit-state hidden">
-                     <div class="profile-card-info">
+            <div class="profile-card-item with-divider">
+                <div class="profile-card-content">
+                    <div class="profile-card-info">
                         <strong>Correo electrónico</strong>
-                        <div class="edit-input-group">
-                            <input type="email" class="edit-input" value="jorge1ortega.484@gmail.com">
-                            <div class="edit-actions">
-                                <button class="cancel-button" data-action="toggleViewState">Cancelar</button>
-                                <button class="save-button" data-action="toggleViewState">Guardar</button>
-                            </div>
-                        </div>
+                        <span><?php echo htmlspecialchars($_SESSION['email'] ?? 'No disponible'); ?></span>
                     </div>
                 </div>
             </div>
-            <div class="profile-card-item" data-section="phone">
-                <div class="view-state">
-                    <div class="profile-card-content">
-                        <div class="profile-card-info">
-                            <strong>Número de teléfono</strong>
-                            <span>+52 81 1234 5678</span>
-                        </div>
+            <div class="profile-card-item">
+                <div class="profile-card-content">
+                    <div class="profile-card-info">
+                        <strong>Número de teléfono</strong>
+                        <span><?php echo htmlspecialchars($_SESSION['phone_number'] ?? 'No disponible'); ?></span>
                     </div>
                 </div>
             </div>

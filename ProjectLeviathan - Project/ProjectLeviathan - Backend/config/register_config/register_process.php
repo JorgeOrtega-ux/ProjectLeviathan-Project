@@ -1,6 +1,4 @@
 <?php
-// register_process.php (El único script de lógica necesario)
-
 session_start();
 header('Content-Type: application/json');
 require_once __DIR__ . '/../db_config.php';
@@ -8,11 +6,8 @@ require_once __DIR__ . '/../db_config.php';
 $action = $_POST['action'] ?? '';
 $response = ['success' => false, 'message' => 'Acción no válida.'];
 
-//======================================================================
-// ACCIÓN 0: GENERAR Y ENVIAR TOKEN CSRF
-//======================================================================
+// ... (El código de CSRF y validación de pasos 1 y 2 permanece igual) ...
 if ($action === 'get_csrf_token') {
-    // Genera un token CSRF si no existe uno en la sesión
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
@@ -22,18 +17,12 @@ if ($action === 'get_csrf_token') {
     exit;
 }
 
-//======================================================================
-// VALIDACIÓN DE CSRF TOKEN PARA TODAS LAS DEMÁS ACCIONES
-//======================================================================
 if (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
     $response['message'] = 'Error de validación de seguridad. Por favor, recarga la página.';
     echo json_encode($response);
     exit;
 }
 
-//======================================================================
-// ACCIÓN 1: VALIDAR ETAPA 1 (EMAIL Y LÍMITE DE IP)
-//======================================================================
 if ($action === 'validate_step1') {
     $ip_limit = 3;
 
@@ -79,9 +68,6 @@ if ($action === 'validate_step1') {
     }
 }
 
-//======================================================================
-// ACCIÓN 2: VALIDAR ETAPA 2 Y GENERAR CÓDIGO
-//======================================================================
 if ($action === 'generate_code') {
     $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
     $password = $_POST['password'] ?? '';
@@ -116,9 +102,7 @@ if ($action === 'generate_code') {
     }
 }
 
-//======================================================================
-// ACCIÓN 3: VERIFICAR CUENTA Y CREAR USUARIO
-//======================================================================
+
 if ($action === 'verify_account') {
     if (!isset($_SESSION['registration_data']) || !isset($_SESSION['client_metadata'])) {
         $response['message'] = 'Sesión expirada. Reinicia el proceso.';
@@ -141,9 +125,9 @@ if ($action === 'verify_account') {
                 function generate_uuid() {
                     return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0x0fff) | 0x4000, mt_rand(0, 0x3fff) | 0x8000, mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff));
                 }
-                // -- MODIFIED SQL INSERT STATEMENT --
+                $user_role = 'user';
                 $stmt_user = $pdo->prepare("INSERT INTO users (uuid, username, email, phone_number, password, role) VALUES (:uuid, :user, :email, :phone, :pass, :role)");
-                $stmt_user->execute(['uuid' => generate_uuid(), 'user' => $reg_data['username'], 'email' => $reg_data['email'], 'phone' => $reg_data['full_phone'], 'pass' => $reg_data['hashed_password'], 'role' => 'user']);
+                $stmt_user->execute(['uuid' => generate_uuid(), 'user' => $reg_data['username'], 'email' => $reg_data['email'], 'phone' => $reg_data['full_phone'], 'pass' => $reg_data['hashed_password'], 'role' => $user_role]);
                 $user_id = $pdo->lastInsertId();
 
                 $stmt_meta = $pdo->prepare("INSERT INTO users_metadata (user_id, ip_address, user_agent) VALUES (:id, :ip, :agent)");
@@ -153,10 +137,18 @@ if ($action === 'verify_account') {
                 $stmt_del->execute(['id' => $verification['id']]);
                 $pdo->commit();
 
-                // Destruir el token CSRF y los datos de sesión de registro
                 unset($_SESSION['csrf_token'], $_SESSION['registration_data'], $_SESSION['client_metadata']);
+                
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $reg_data['username'];
+                $_SESSION['email'] = $reg_data['email'];
+                $_SESSION['phone_number'] = $reg_data['full_phone'];
+                $_SESSION['role'] = $user_role;
+
                 $response['success'] = true;
                 $response['message'] = '¡Cuenta verificada y creada con éxito!';
+                // CORRECCIÓN: Ruta relativa para redirigir a la carpeta del Frontend
+                $response['redirect_url'] = '../../ProjectLeviathan - Frontend/';
             }
         } catch (PDOException $e) {
             $pdo->rollBack();

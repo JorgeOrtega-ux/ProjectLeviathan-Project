@@ -1,3 +1,7 @@
+<?php
+$userRole = $_SESSION['role'] ?? 'user';
+$headerRankDetails = getRankDetails($userRole);
+?>
 <div class="header">
     <div class="header-left">
         <div class="header-item">
@@ -8,9 +12,9 @@
     </div>
     <div class="header-right">
         <div class="header-item">
-            <div class="profile-container rank-owner" data-action="toggleModuleOptions">
+            <div class="profile-container <?php echo htmlspecialchars($headerRankDetails['class']); ?>" data-action="toggleModuleOptions">
                 <div class="profile-content">
-                    <span class="material-symbols-rounded">shield</span>
+                    <span class="material-symbols-rounded"><?php echo htmlspecialchars($headerRankDetails['icon']); ?></span>
                 </div>
             </div>
         </div>

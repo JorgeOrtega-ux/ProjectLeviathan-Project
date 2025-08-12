@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once __DIR__ . '/../db_config.php'; //
+require_once __DIR__ . '/../db_config.php';
 
 $action = $_POST['action'] ?? '';
 $response = ['success' => false, 'message' => 'Acción no válida.'];
@@ -37,9 +37,14 @@ if ($action === 'login') {
             if ($user && password_verify($password, $user['password'])) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['phone_number'] = $user['phone_number'];
+                $_SESSION['role'] = $user['role'];
+
                 $response['success'] = true;
                 $response['message'] = 'Inicio de sesión exitoso.';
-                $response['redirect_url'] = '../'; // Redirigir al frontend
+                // CORRECCIÓN: Ruta relativa para redirigir a la carpeta del Frontend
+                $response['redirect_url'] = '../ProjectLeviathan - Frontend/';
             } else {
                 $response['message'] = 'Correo o contraseña incorrectos.';
             }

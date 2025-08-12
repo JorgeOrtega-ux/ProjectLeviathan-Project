@@ -1,6 +1,17 @@
-<?php require_once 'config/config.php'; ?>
-<?php require_once 'config/router.php'; ?>
+<?php
+session_start();
+require_once 'config/config.php';
 
+// Proteger la página: si el usuario no ha iniciado sesión, redirigirlo a la página de login
+if (!isset($_SESSION['user_id'])) {
+    // CORRECCIÓN: Se eliminó "/login" de la ruta de redirección
+    $login_path = str_replace('ProjectLeviathan - Frontend', 'ProjectLeviathan - Backend/', getBaseUrl());
+    header('Location: ' . $login_path);
+    exit;
+}
+
+require_once 'config/router.php';
+?>
 <!DOCTYPE html>
 <html lang="es">
 
