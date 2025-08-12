@@ -3,7 +3,7 @@
 
 session_start();
 header('Content-Type: application/json');
-require_once 'db_config.php';
+require_once __DIR__ . '/../db_config.php';
 
 $action = $_POST['action'] ?? '';
 $response = ['success' => false, 'message' => 'Acción no válida.'];

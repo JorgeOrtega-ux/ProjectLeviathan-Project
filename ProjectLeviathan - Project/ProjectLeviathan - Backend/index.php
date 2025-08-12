@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crea una cuenta - ProjectLeviathan</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
@@ -125,6 +125,6 @@
             <a href="#">Política de privacidad</a>
         </footer>
     </div>
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/register_js/main.js"></script>
 </body>
 </html>
