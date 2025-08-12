@@ -1,0 +1,413 @@
+/* --- Reseteo y Estilos Globales --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Roboto", sans-serif;
+    background-color: #ffffff;
+    color: #10162f;
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 0 32px;
+}
+
+/* Clases de visibilidad */
+.active {
+    display: block;
+}
+.disabled {
+    display: none;
+}
+
+/* --- ESTILOS DE OVERFLOW AÑADIDOS --- */
+.overflow-y {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scrollbar-color: #00000080 transparent;
+    scrollbar-width: thin;
+}
+
+/* --- Header, Main y Footer --- */
+.page-header {
+    width: 100%;
+    padding: 24px 0;
+}
+
+.main-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 80px;
+    width: 100%;
+}
+
+.content-wrapper {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.page-footer {
+    width: 100%;
+    padding: 24px 0;
+    text-align: center;
+    font-size: 14px;
+}
+
+.page-footer a,
+.other-page-link a {
+    color: #000000;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.page-footer a:hover,
+.other-page-link a:hover {
+    text-decoration: underline;
+}
+
+.page-footer .separator {
+    margin: 0 8px;
+    color: #aaa;
+}
+
+/* --- Tipografía --- */
+h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 12px; /* Reducido para dar espacio al subtítulo */
+}
+
+/* --- Nuevo estilo para el subtítulo --- */
+.form-subtitle {
+    font-size: 16px;
+    color: #697386;
+    line-height: 1.5;
+    margin-bottom: 28px;
+}
+
+.other-page-link {
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+/* --- Estilos para las etapas del formulario --- */
+.register-stage.active {
+    display: block;
+}
+
+.verification-text {
+    font-size: 15px;
+    color: #697386;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+/* --- Estilos Generales del Formulario --- */
+.input-wrapper {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.input-field {
+    width: 100%;
+    height: 52px;
+    padding: 14px 16px;
+    font-size: 16px;
+    border: 1px solid #00000020;
+    border-radius: 8px;
+    outline: none;
+    background-color: transparent;
+    transition: border-color 0.2s;
+}
+
+/* --- Estilos para la Etiqueta Flotante --- */
+.input-label {
+    position: absolute;
+    left: 17px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #697386;
+    background-color: #ffffff;
+    padding: 0 4px;
+    font-size: 16px;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.input-field:focus + .input-label,
+.input-field:not(:placeholder-shown) + .input-label,
+.input-field.error-border + .input-label {
+    top: 0;
+    left: 12px;
+    transform: translateY(-50%) scale(0.85);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.input-field:focus + .input-label,
+.input-field:not(:placeholder-shown) + .input-label {
+    color: #000000;
+}
+
+.input-field.error-border + .input-label {
+    color: #d93025;
+}
+
+.input-field:focus,
+.input-field:not(:placeholder-shown) {
+    border-color: #000000;
+}
+
+/* --- Componentes Específicos del Formulario --- */
+#password.input-field {
+    padding-right: 52px;
+}
+
+#toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #00000099;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+#toggle-password:hover {
+    background-color: #f5f5fa;
+}
+
+/* --- Grupo de Teléfono y Selector de País --- */
+.input-label.static {
+    position: relative;
+    transform: none;
+    top: auto;
+    left: auto;
+    font-size: 14px;
+    font-weight: 500;
+    color: #000000;
+    padding: 0;
+    display: block;
+    text-align: left;
+    margin-bottom: 6px;
+    pointer-events: auto;
+}
+
+.phone-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #00000020;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+
+.phone-group:focus-within {
+    border-color: #000000;
+}
+
+.country-selector {
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 16px;
+    cursor: pointer;
+    height: 50px;
+    border-right: 1px solid #00000020;
+}
+
+.country-code {
+    font-size: 16px;
+    font-weight: 500;
+    color: #10162f;
+    margin-right: 4px;
+}
+
+.phone-field {
+    border: none !important;
+    height: 50px;
+    flex-grow: 1;
+}
+
+/* --- Menú desplegable para selector de país --- */
+.module-content {
+    height: auto;
+    position: absolute;
+    z-index: 999;
+}
+
+.menu-content {
+    background-color: #ffffff;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px #00000020;
+    color: #000000;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+}
+
+.menu-body {
+    padding: 8px;
+}
+
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: auto;
+    user-select: none;
+    width: 100%;
+}
+
+.menu-link {
+    border-radius: 8px;
+    color: #000000;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    height: 40px;
+    position: relative;
+    width: 100%;
+    align-items: center;
+}
+
+.menu-link:hover {
+    background-color: #f5f5fa;
+}
+
+.menu-link-icon {
+    display: flex;
+    flex-shrink: 0;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    font-size: 24px;
+}
+
+.menu-link-text {
+    align-self: center;
+    display: block;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-align: start;
+}
+
+.country-selector-module {
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+}
+
+/* --- Botón Principal --- */
+.continue-btn {
+    width: 100%;
+    height: 52px;
+    margin-top: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #ffffff;
+    background-color: #000000;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.continue-btn:hover {
+    opacity: 0.8;
+}
+
+/* --- Contenedor de Error --- */
+.error-container {
+    width: 100%;
+    background-color: transparent;
+    border: 1px solid #d93025;
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 16px;
+    text-align: left;
+}
+
+.error-container.active {
+    display: block;
+}
+
+.error-message {
+    position: relative;
+    padding-left: 16px;
+    color: #d93025;
+    font-size: 14px;
+}
+
+.error-message::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+/* Estilo para el borde de error en los inputs */
+.input-field.error-border,
+.phone-group.error-border {
+    border-color: #d93025 !important;
+}
+
+/* --- ESTILOS PARA EL SPINNER DE CARGA EN LOS BOTONES --- */
+
+/* Animación para la rotación del spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilo que se aplicará al botón cuando esté cargando */
+.continue-btn.btn-loading {
+    position: relative;
+    pointer-events: none; /* Evita clics múltiples mientras carga */
+}
+
+/* Oculta el texto del botón cuando está cargando */
+.continue-btn.btn-loading span {
+    visibility: hidden;
+}
+
+/* El spinner en sí (pseudo-elemento) */
+.continue-btn.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;  /* Tamaño del spinner */
+    height: 24px; /* Tamaño del spinner */
+    margin-top: -12px;  /* Mitad de la altura para centrar verticalmente */
+    margin-left: -12px; /* Mitad del ancho para centrar horizontalmente */
+
+    border: 3px solid rgba(255, 255, 255, 0.4); /* Color base del círculo */
+    border-top-color: #ffffff; /* Color de la parte que gira */
+    border-radius: 50%;
+    
+    animation: spin 0.8s linear infinite; /* Aplica la animación */
+}
