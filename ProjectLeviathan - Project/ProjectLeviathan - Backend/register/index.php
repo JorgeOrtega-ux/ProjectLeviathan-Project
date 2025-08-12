@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crea una cuenta - ProjectLeviathan</title>
-    
     <link rel="stylesheet" href="../assets/css/styles.css">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
 <body>
-
     <div class="page-wrapper">
         <header class="page-header">
             <a href="#" class="logo-link">
@@ -23,7 +20,7 @@
 
         <main class="main-container">
             <section class="content-wrapper">
-                <form id="register-form" action="#" method="POST" novalidate>
+                <form id="register-form" method="POST" novalidate>
                     
                     <div class="register-stage active" id="stage-1">
                         <h1>Crea una cuenta</h1>
@@ -36,7 +33,9 @@
                             <label class="input-label" for="password">Contraseña*</label>
                             <span class="material-symbols-rounded" id="toggle-password">visibility</span>
                         </div>
-                        <button type="button" class="continue-btn" data-next-stage="2">Continuar</button>
+                        <button type="button" class="continue-btn" data-action="next-stage">
+                            <span>Continuar</span>
+                        </button>
                     </div>
 
                     <div class="register-stage disabled" id="stage-2">
@@ -76,19 +75,23 @@
                             </div>
                             <input type="hidden" id="country_code" name="country_code" value="+52">
                         </div>
-                        <button type="button" class="continue-btn" data-next-stage="3">Continuar</button>
+                        <button type="button" class="continue-btn" data-action="submit-register">
+                            <span>Finalizar registro</span>
+                        </button>
                     </div>
 
                     <div class="register-stage disabled" id="stage-3">
                         <h1>Último paso</h1>
                         <p class="verification-text">
-                            Te hemos enviado un código de verificación a tu teléfono. Por favor, ingrésalo para finalizar.
+                            Hemos guardado tu código en la base de datos. Búscalo e ingrésalo aquí para verificar tu cuenta.
                         </p>
                         <div class="input-wrapper">
                             <input class="input-field" type="text" id="verification_code" name="verification_code" required placeholder=" " minlength="6" maxlength="6">
                             <label class="input-label" for="verification_code">Código de verificación*</label>
                         </div>
-                        <button type="submit" class="continue-btn">Finalizar registro</button>
+                        <button type="button" class="continue-btn" data-action="submit-verification">
+                            <span>Verificar cuenta</span>
+                        </button>
                     </div>
                     
                     <div class="error-container disabled" id="error-container">
@@ -101,15 +104,13 @@
                 </p>
             </section>
         </main>
-
+        
         <footer class="page-footer">
             <a href="#">Términos de uso</a>
             <span class="separator">|</span>
             <a href="#">Política de privacidad</a>
         </footer>
     </div>
-    
     <script src="assets/js/main.js"></script>
-
 </body>
 </html>

@@ -128,7 +128,6 @@ h1 {
     transition: all 0.2s ease;
 }
 
-/* La etiqueta se eleva al enfocar, al tener contenido O al tener un error */
 .input-field:focus + .input-label,
 .input-field:not(:placeholder-shown) + .input-label,
 .input-field.error-border + .input-label {
@@ -139,14 +138,11 @@ h1 {
     font-weight: 500;
 }
 
-/* El label se pone negro cuando el input tiene foco o contenido */
 .input-field:focus + .input-label,
 .input-field:not(:placeholder-shown) + .input-label {
     color: #000000;
 }
 
-/* --- ¡CORRECCIÓN AQUÍ! --- */
-/* El label del campo con error ahora se colorea de rojo */
 .input-field.error-border + .input-label {
     color: #d93025;
 }
@@ -232,7 +228,7 @@ h1 {
     flex-grow: 1;
 }
 
-/* --- Estructura base del menú desplegable --- */
+/* --- Menú desplegable para selector de país --- */
 .module-content {
     height: auto;
     position: absolute;
@@ -298,17 +294,11 @@ h1 {
     text-align: start;
 }
 
-/* Adaptación específica para el selector de país */
 .country-selector-module {
     top: calc(100% + 4px);
     left: 0;
     width: 100%;
 }
-
-.country-selector-module.active {
-    display: block;
-}
-
 
 /* --- Botón Principal --- */
 .continue-btn {
@@ -364,4 +354,41 @@ h1 {
 .input-field.error-border,
 .phone-group.error-border {
     border-color: #d93025 !important;
+}
+
+/* --- ESTILOS PARA EL SPINNER DE CARGA EN LOS BOTONES --- */
+
+/* Animación para la rotación del spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilo que se aplicará al botón cuando esté cargando */
+.continue-btn.btn-loading {
+    position: relative;
+    pointer-events: none; /* Evita clics múltiples mientras carga */
+}
+
+/* Oculta el texto del botón cuando está cargando */
+.continue-btn.btn-loading span {
+    visibility: hidden;
+}
+
+/* El spinner en sí (pseudo-elemento) */
+.continue-btn.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;  /* Tamaño del spinner */
+    height: 24px; /* Tamaño del spinner */
+    margin-top: -12px;  /* Mitad de la altura para centrar verticalmente */
+    margin-left: -12px; /* Mitad del ancho para centrar horizontalmente */
+
+    border: 3px solid rgba(255, 255, 255, 0.4); /* Color base del círculo */
+    border-top-color: #ffffff; /* Color de la parte que gira */
+    border-radius: 50%;
+    
+    animation: spin 0.8s linear infinite; /* Aplica la animación */
 }
