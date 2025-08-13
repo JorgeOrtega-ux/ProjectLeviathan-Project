@@ -34,6 +34,9 @@
                             <label class="input-label" for="password">Contraseña*</label>
                             <span class="material-symbols-rounded" id="toggle-password">visibility</span>
                         </div>
+                        <div class="extra-links">
+                            <a href="forgot-password">¿Olvidaste la contraseña?</a>
+                        </div>
                         <button type="submit" class="continue-btn">
                             <span>Continuar</span>
                         </button>
