@@ -74,6 +74,9 @@ function initMainController() {
     const saveNewPasswordButton = document.querySelector('[data-action="saveNewPassword"]');
     const paneConfirmPassword = document.querySelector('[data-pane="confirmPassword"]');
     const paneSetNewPassword = document.querySelector('[data-pane="setNewPassword"]');
+    
+    // --- Variable para el botón de cerrar sesión ---
+    const logoutButton = document.querySelector('[data-action="logout"]');
 
     if (!toggleOptionsButton || !moduleOptions || !toggleSurfaceButton || !moduleSurface || !sectionHome || !sectionExplore || !sectionSettings || !sectionHelp) return;
 
@@ -637,6 +640,15 @@ function initMainController() {
                 closeMenuOptions();
             });
         }
+        
+        // --- Event Listener para el botón de cerrar sesión ---
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                const backendLogoutUrl = window.PROJECT_CONFIG.baseUrl.replace('ProjectLeviathan - Frontend', 'ProjectLeviathan - Backend/logout.php');
+                window.location.href = backendLogoutUrl;
+            });
+        }
+
         if (toggleSectionHomeFromSettingsButton) {
             toggleSectionHomeFromSettingsButton.addEventListener('click', () => handleNavigationChange('home'));
         }
@@ -661,7 +673,7 @@ function initMainController() {
         if (toggleSectionPrivacyButton) {
             toggleSectionPrivacyButton.addEventListener('click', () => {
                 if (!isSectionPrivacyActive) handleNavigationChange('help', 'privacy');
-});
+            });
         }
         if (toggleSectionTermsButton) {
             toggleSectionTermsButton.addEventListener('click', () => {

@@ -21,7 +21,7 @@
                         <span>Ayuda y recursos</span>
                     </div>
                 </div>
-                <div class="menu-link">
+                <div class="menu-link" data-action="logout" style="cursor: pointer;">
                     <div class="menu-link-icon">
                         <span class="material-symbols-rounded">exit_to_app</span>
                     </div>

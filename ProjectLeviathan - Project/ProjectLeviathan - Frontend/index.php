@@ -10,6 +10,30 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// --- INICIO DEL CÓDIGO AÑADIDO ---
+// Este bloque actualiza el rol del usuario en cada recarga de página.
+
+// 1. Incluir la configuración de la base de datos del backend.
+// Se usa __DIR__ para asegurar que la ruta sea correcta sin importar desde dónde se llame.
+require_once __DIR__ . '/../ProjectLeviathan - Backend/config/db_config.php';
+
+try {
+    // 2. Preparar y ejecutar la consulta para obtener el rol más reciente.
+    $stmt = $pdo->prepare("SELECT role FROM users WHERE id = :user_id");
+    $stmt->execute(['user_id' => $_SESSION['user_id']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // 3. Si se encuentra al usuario, actualizar el rol en la sesión.
+    if ($user && isset($user['role'])) {
+        $_SESSION['role'] = $user['role'];
+    }
+} catch (PDOException $e) {
+    // En un entorno de producción, aquí se registraría el error.
+    // Para este caso, si falla la consulta, simplemente se usará el rol que ya está en la sesión.
+}
+// --- FIN DEL CÓDIGO AÑADIDO ---
+
+
 require_once 'config/router.php';
 ?>
 <!DOCTYPE html>

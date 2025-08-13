@@ -31,27 +31,59 @@ $rankDetails = getRankDetails($userRole);
         </div>
 
         <div class="profile-card">
-            <div class="profile-card-item with-divider">
-                <div class="profile-card-content">
+            <div class="profile-card-item with-divider" data-section="name">
+                <div class="view-state">
+                    <div class="profile-card-content">
+                        <div class="profile-card-info">
+                            <strong>Nombre de usuario</strong>
+                            <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'No disponible'); ?></span>
+                        </div>
+                    </div>
+                    <button class="edit-button" data-action="toggleEditState">Editar</button>
+                </div>
+                <div class="edit-state hidden">
                     <div class="profile-card-info">
                         <strong>Nombre de usuario</strong>
-                        <span><?php echo htmlspecialchars($_SESSION['username'] ?? 'No disponible'); ?></span>
+                        <div class="edit-input-group">
+                            <input type="text" class="edit-input" value="<?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?>">
+                            <div class="edit-actions">
+                                <button class="cancel-button" data-action="toggleViewState">Cancelar</button>
+                                <button class="save-button" data-action="toggleViewState">Guardar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="profile-card-item with-divider">
-                <div class="profile-card-content">
-                    <div class="profile-card-info">
+            <div class="profile-card-item with-divider" data-section="email">
+                <div class="view-state">
+                    <div class="profile-card-content">
+                        <div class="profile-card-info">
+                            <strong>Correo electrónico</strong>
+                            <span><?php echo htmlspecialchars($_SESSION['email'] ?? 'No disponible'); ?></span>
+                        </div>
+                    </div>
+                    <button class="edit-button" data-action="toggleEditState">Editar</button>
+                </div>
+                <div class="edit-state hidden">
+                     <div class="profile-card-info">
                         <strong>Correo electrónico</strong>
-                        <span><?php echo htmlspecialchars($_SESSION['email'] ?? 'No disponible'); ?></span>
+                        <div class="edit-input-group">
+                            <input type="email" class="edit-input" value="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>">
+                            <div class="edit-actions">
+                                <button class="cancel-button" data-action="toggleViewState">Cancelar</button>
+                                <button class="save-button" data-action="toggleViewState">Guardar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="profile-card-item">
-                <div class="profile-card-content">
-                    <div class="profile-card-info">
-                        <strong>Número de teléfono</strong>
-                        <span><?php echo htmlspecialchars($_SESSION['phone_number'] ?? 'No disponible'); ?></span>
+            <div class="profile-card-item" data-section="phone">
+                <div class="view-state">
+                    <div class="profile-card-content">
+                        <div class="profile-card-info">
+                            <strong>Número de teléfono</strong>
+                            <span><?php echo htmlspecialchars($_SESSION['phone_number'] ?? 'No disponible'); ?></span>
+                        </div>
                     </div>
                 </div>
             </div>
