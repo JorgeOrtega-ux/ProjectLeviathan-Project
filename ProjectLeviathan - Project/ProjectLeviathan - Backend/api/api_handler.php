@@ -26,17 +26,19 @@ if ($action === 'update_profile') {
     }
 
     $response = ['success' => false];
-    $update_column_name = "last_{$field}_update";
 
     try {
-        // 1. Verificar el límite de tiempo para el cambio (30 días)
-        $stmt_time = $pdo->prepare("SELECT $update_column_name FROM users WHERE id = :user_id");
-        $stmt_time->execute(['user_id' => $userId]);
-        $user_data = $stmt_time->fetch(PDO::FETCH_ASSOC);
-        $last_update = $user_data[$update_column_name];
+        // 1. Verificar el límite de tiempo desde la nueva tabla de historial
+        $stmt_time = $pdo->prepare(
+            "SELECT updated_at FROM user_update_history 
+             WHERE user_id = :user_id AND field_changed = :field 
+             ORDER BY updated_at DESC LIMIT 1"
+        );
+        $stmt_time->execute(['user_id' => $userId, 'field' => $field]);
+        $last_update_record = $stmt_time->fetch(PDO::FETCH_ASSOC);
 
-        if ($last_update !== null) {
-            $last_update_time = new DateTime($last_update);
+        if ($last_update_record) {
+            $last_update_time = new DateTime($last_update_record['updated_at']);
             $current_time = new DateTime();
             $interval = $current_time->diff($last_update_time);
             
@@ -51,28 +53,14 @@ if ($action === 'update_profile') {
 
         // 2. Validación específica por campo
         if ($field === 'email') {
-            if (!preg_match('/^[a-zA-Z0-9._-]+@(gmail\.com|outlook\.com)$/i', $value)) {
-                $response['message'] = 'Solo se permiten correos de @gmail.com o @outlook.com.';
-                echo json_encode($response);
-                exit;
-            }
-            $stmt_check = $pdo->prepare("SELECT id FROM users WHERE email = :email AND id != :user_id");
-            $stmt_check->execute(['email' => $value, 'user_id' => $userId]);
-            if ($stmt_check->fetch()) {
-                $response['message'] = 'Ese correo electrónico ya está registrado por otro usuario.';
+            if (!filter_var($value, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._-]+@(gmail\.com|outlook\.com)$/i', $value)) {
+                $response['message'] = 'Solo se permiten correos válidos de @gmail.com o @outlook.com.';
                 echo json_encode($response);
                 exit;
             }
         } elseif ($field === 'username') {
             if (strlen($value) < 4 || strlen($value) > 25) {
-                 $response['message'] = 'El nombre de usuario debe tener entre 4 y 25 caracteres.';
-                echo json_encode($response);
-                exit;
-            }
-            $stmt_check = $pdo->prepare("SELECT id FROM users WHERE username = :username AND id != :user_id");
-            $stmt_check->execute(['username' => $value, 'user_id' => $userId]);
-            if ($stmt_check->fetch()) {
-                $response['message'] = 'Ese nombre de usuario ya está en uso.';
+                $response['message'] = 'El nombre de usuario debe tener entre 4 y 25 caracteres.';
                 echo json_encode($response);
                 exit;
             }
@@ -82,21 +70,48 @@ if ($action === 'update_profile') {
             exit;
         }
 
-        // 3. Actualizar el campo y la fecha de actualización
-        $stmt_update = $pdo->prepare("UPDATE users SET $field = :value, $update_column_name = NOW() WHERE id = :user_id");
+        // Verificar si el nuevo valor ya está en uso por otro usuario
+        $stmt_check = $pdo->prepare("SELECT id FROM users WHERE $field = :value AND id != :user_id");
+        $stmt_check->execute(['value' => $value, 'user_id' => $userId]);
+        if ($stmt_check->fetch()) {
+            $response['message'] = 'Ese ' . ($field === 'username' ? 'nombre de usuario' : 'correo electrónico') . ' ya está en uso.';
+            echo json_encode($response);
+            exit;
+        }
+        
+        // Obtener el valor antiguo para el historial
+        $stmt_old = $pdo->prepare("SELECT $field FROM users WHERE id = :user_id");
+        $stmt_old->execute(['user_id' => $userId]);
+        $old_value = $stmt_old->fetchColumn();
+
+        // 3. Actualizar el campo en la tabla de usuarios y registrar en el historial
+        $pdo->beginTransaction();
+        
+        $stmt_update = $pdo->prepare("UPDATE users SET $field = :value WHERE id = :user_id");
         $stmt_update->execute(['value' => $value, 'user_id' => $userId]);
 
-        if ($stmt_update->rowCount() > 0) {
-            $_SESSION[$field] = $value;
-            $response['success'] = true;
-            $response['newValue'] = htmlspecialchars($value);
-            $response['message'] = '¡Tu ' . ($field === 'username' ? 'nombre de usuario' : 'correo') . ' se ha actualizado correctamente!';
-        } else {
-            $response['message'] = 'No se realizaron cambios o el valor es el mismo.';
-        }
+        $stmt_history = $pdo->prepare(
+            "INSERT INTO user_update_history (user_id, field_changed, old_value, new_value) 
+             VALUES (:user_id, :field, :old_value, :new_value)"
+        );
+        $stmt_history->execute([
+            'user_id' => $userId, 
+            'field' => $field,
+            'old_value' => $old_value,
+            'new_value' => $value
+        ]);
+
+        $pdo->commit();
+
+        $_SESSION[$field] = $value;
+        $response['success'] = true;
+        $response['newValue'] = htmlspecialchars($value);
+        $response['message'] = '¡Tu ' . ($field === 'username' ? 'nombre de usuario' : 'correo') . ' se ha actualizado correctamente!';
+        
     } catch (PDOException $e) {
+        $pdo->rollBack();
         $response['message'] = 'Error del servidor al intentar actualizar los datos.';
-        // error_log($e->getMessage());
+        // error_log($e->getMessage()); // Descomentar para depuración en servidor
     }
     echo json_encode($response);
 
@@ -111,7 +126,7 @@ if ($action === 'update_profile') {
 
     try {
         // 1. Obtener datos del usuario
-        $stmt_user = $pdo->prepare("SELECT password, last_password_update FROM users WHERE id = :user_id");
+        $stmt_user = $pdo->prepare("SELECT password FROM users WHERE id = :user_id");
         $stmt_user->execute(['user_id' => $userId]);
         $user = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
@@ -124,7 +139,6 @@ if ($action === 'update_profile') {
         // 2. Verificar la contraseña actual
         if (!password_verify($current_password, $user['password'])) {
             $response['message'] = 'La contraseña actual es incorrecta.';
-            $response['field'] = 'current'; // Para identificar el campo con error
             echo json_encode($response);
             exit;
         }
@@ -137,8 +151,16 @@ if ($action === 'update_profile') {
         }
         
         // 3. Verificar el límite de tiempo para el cambio (24 horas)
-        if ($user['last_password_update'] !== null) {
-            $last_update_time = new DateTime($user['last_password_update']);
+        $stmt_time = $pdo->prepare(
+            "SELECT updated_at FROM user_update_history 
+             WHERE user_id = :user_id AND field_changed = 'password' 
+             ORDER BY updated_at DESC LIMIT 1"
+        );
+        $stmt_time->execute(['user_id' => $userId]);
+        $last_update_record = $stmt_time->fetch(PDO::FETCH_ASSOC);
+
+        if ($last_update_record) {
+            $last_update_time = new DateTime($last_update_record['updated_at']);
             $current_time = new DateTime();
             $interval_seconds = $current_time->getTimestamp() - $last_update_time->getTimestamp();
 
@@ -168,15 +190,25 @@ if ($action === 'update_profile') {
             exit;
         }
 
-        // 5. Hashear y actualizar la nueva contraseña y la fecha de actualización
+        // 5. Hashear y actualizar la nueva contraseña y registrar en el historial
+        $pdo->beginTransaction();
+        
         $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
-        $stmt_update = $pdo->prepare("UPDATE users SET password = :password, last_password_update = NOW() WHERE id = :user_id");
+        $stmt_update = $pdo->prepare("UPDATE users SET password = :password WHERE id = :user_id");
         $stmt_update->execute(['password' => $hashed_password, 'user_id' => $userId]);
+
+        $stmt_history = $pdo->prepare(
+            "INSERT INTO user_update_history (user_id, field_changed) VALUES (:user_id, 'password')"
+        );
+        $stmt_history->execute(['user_id' => $userId]);
+
+        $pdo->commit();
 
         $response['success'] = true;
         $response['message'] = '¡Tu contraseña ha sido actualizada con éxito!';
 
     } catch (PDOException $e) {
+        $pdo->rollBack();
         $response['message'] = 'Error del servidor al intentar actualizar la contraseña.';
         // error_log($e->getMessage());
     }
@@ -197,7 +229,6 @@ if ($action === 'update_profile') {
     }
 
     try {
-        // 1. Obtener la contraseña actual del usuario
         $stmt_user = $pdo->prepare("SELECT password FROM users WHERE id = :user_id");
         $stmt_user->execute(['user_id' => $userId]);
         $user = $stmt_user->fetch(PDO::FETCH_ASSOC);
@@ -208,22 +239,17 @@ if ($action === 'update_profile') {
             exit;
         }
 
-        // 2. Verificar la contraseña
         if (password_verify($password, $user['password'])) {
-            // Contraseña correcta, proceder a "eliminar"
             $stmt_delete = $pdo->prepare("UPDATE users SET status = 'deleted' WHERE id = :user_id");
             $stmt_delete->execute(['user_id' => $userId]);
 
-            // 3. Destruir la sesión
             session_unset();
             session_destroy();
             
             $response['success'] = true;
-            // Redirigir al directorio de login en la carpeta Backend
             $response['redirect_url'] = '../'; 
 
         } else {
-            // Contraseña incorrecta
             $response['message'] = 'La contraseña es incorrecta.';
         }
 

@@ -6,7 +6,7 @@ require_once __DIR__ . '/../db_config.php';
 $action = $_POST['action'] ?? '';
 $response = ['success' => false, 'message' => 'Acción no válida.'];
 
-// ... (El código de CSRF y validación de pasos 1 y 2 permanece igual) ...
+// --- ACCIÓN: OBTENER TOKEN CSRF ---
 if ($action === 'get_csrf_token') {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -17,12 +17,14 @@ if ($action === 'get_csrf_token') {
     exit;
 }
 
+// --- VALIDACIÓN DE TOKEN CSRF ---
 if (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
     $response['message'] = 'Error de validación de seguridad. Por favor, recarga la página.';
     echo json_encode($response);
     exit;
 }
 
+// --- ACCIÓN: VALIDAR PASO 1 (CORREO Y LÍMITE DE IP) ---
 if ($action === 'validate_step1') {
     $ip_limit = 3;
 
@@ -68,6 +70,7 @@ if ($action === 'validate_step1') {
     }
 }
 
+// --- ACCIÓN: GENERAR CÓDIGO DE VERIFICACIÓN ---
 if ($action === 'generate_code') {
     $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
     $password = $_POST['password'] ?? '';
@@ -103,6 +106,7 @@ if ($action === 'generate_code') {
 }
 
 
+// --- ACCIÓN: VERIFICAR CUENTA Y CREAR USUARIO ---
 if ($action === 'verify_account') {
     if (!isset($_SESSION['registration_data']) || !isset($_SESSION['client_metadata'])) {
         $response['message'] = 'Sesión expirada. Reinicia el proceso.';
@@ -122,23 +126,46 @@ if ($action === 'verify_account') {
                 $response['message'] = 'El código ha expirado.';
             } else {
                 $pdo->beginTransaction();
+                
                 function generate_uuid() {
                     return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0x0fff) | 0x4000, mt_rand(0, 0x3fff) | 0x8000, mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff));
                 }
+                
+                // MODIFICACIÓN: Se añade `created_at` a la consulta de inserción
                 $user_role = 'user';
-                $stmt_user = $pdo->prepare("INSERT INTO users (uuid, username, email, phone_number, password, role) VALUES (:uuid, :user, :email, :phone, :pass, :role)");
-                $stmt_user->execute(['uuid' => generate_uuid(), 'user' => $reg_data['username'], 'email' => $reg_data['email'], 'phone' => $reg_data['full_phone'], 'pass' => $reg_data['hashed_password'], 'role' => $user_role]);
+                $stmt_user = $pdo->prepare(
+                    "INSERT INTO users (uuid, username, email, phone_number, password, role, created_at) 
+                     VALUES (:uuid, :user, :email, :phone, :pass, :role, :created_at)"
+                );
+                
+                // MODIFICACIÓN: Se crea la variable con la fecha y hora actual generada por PHP
+                $created_at = date('Y-m-d H:i:s');
+                
+                // MODIFICACIÓN: Se pasa la nueva variable a la ejecución de la consulta
+                $stmt_user->execute([
+                    'uuid' => generate_uuid(), 
+                    'user' => $reg_data['username'], 
+                    'email' => $reg_data['email'], 
+                    'phone' => $reg_data['full_phone'], 
+                    'pass' => $reg_data['hashed_password'], 
+                    'role' => $user_role,
+                    'created_at' => $created_at
+                ]);
                 $user_id = $pdo->lastInsertId();
 
+                // Se inserta en `users_metadata` sin la columna de fecha redundante
                 $stmt_meta = $pdo->prepare("INSERT INTO users_metadata (user_id, ip_address, user_agent) VALUES (:id, :ip, :agent)");
                 $stmt_meta->execute(['id' => $user_id, 'ip' => $meta_data['ip_address'], 'agent' => $meta_data['user_agent']]);
 
                 $stmt_del = $pdo->prepare("DELETE FROM verification_codes WHERE id = :id");
                 $stmt_del->execute(['id' => $verification['id']]);
+                
                 $pdo->commit();
 
+                // Limpiar la sesión de datos de registro
                 unset($_SESSION['csrf_token'], $_SESSION['registration_data'], $_SESSION['client_metadata']);
                 
+                // Iniciar la sesión para el nuevo usuario
                 $_SESSION['user_id'] = $user_id;
                 $_SESSION['username'] = $reg_data['username'];
                 $_SESSION['email'] = $reg_data['email'];
@@ -147,12 +174,14 @@ if ($action === 'verify_account') {
 
                 $response['success'] = true;
                 $response['message'] = '¡Cuenta verificada y creada con éxito!';
-                // CORRECCIÓN: Ruta relativa para redirigir a la carpeta del Frontend
                 $response['redirect_url'] = '../../ProjectLeviathan - Frontend/';
             }
         } catch (PDOException $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $response['message'] = 'Error del servidor al crear la cuenta.';
+            // Para depuración, puedes registrar el error: error_log($e->getMessage());
         }
     }
 }
