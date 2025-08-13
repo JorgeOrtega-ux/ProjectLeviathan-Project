@@ -6,13 +6,54 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../config/db_config.php';
 
 // Validar el token CSRF para todas las peticiones POST
-if (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token']))) {
     echo json_encode(['success' => false, 'message' => 'Error de validación de seguridad.']);
     exit;
 }
 
 // Obtener la acción a realizar
-$action = $_POST['action'] ?? '';
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// --- ACCIÓN: OBTENER FECHAS DE LA CUENTA ---
+if ($action === 'get_account_dates') {
+    $userId = $_SESSION['user_id'] ?? 0;
+    if (empty($userId)) {
+        echo json_encode(['success' => false, 'message' => 'Usuario no autenticado.']);
+        exit;
+    }
+
+    $response = ['success' => false];
+
+    try {
+        // MODIFICACIÓN: Establecer el idioma a español para las fechas
+        setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'Spanish');
+
+        // Obtener fecha de creación
+        $stmt_creation = $pdo->prepare("SELECT created_at FROM users WHERE id = :user_id");
+        $stmt_creation->execute(['user_id' => $userId]);
+        $creation_date = $stmt_creation->fetchColumn();
+
+        // Obtener última actualización de contraseña
+        $stmt_pass_update = $pdo->prepare(
+            "SELECT updated_at FROM user_update_history 
+             WHERE user_id = :user_id AND field_changed = 'password' 
+             ORDER BY updated_at DESC LIMIT 1"
+        );
+        $stmt_pass_update->execute(['user_id' => $userId]);
+        $last_password_update = $stmt_pass_update->fetchColumn();
+        
+        // MODIFICACIÓN: Se usa strftime para un formato localizado más fiable
+        $response['success'] = true;
+        $response['creation_date'] = $creation_date ? strftime('%e de %B de %Y a las %I:%M %p', strtotime($creation_date)) : 'No disponible';
+        $response['last_password_update'] = $last_password_update ? 'Última actualización: ' . strftime('%e de %B de %Y a las %I:%M %p', strtotime($last_password_update)) : 'Aún no has actualizado tu contraseña.';
+
+    } catch (PDOException $e) {
+        $response['message'] = 'Error del servidor.';
+    }
+    
+    echo json_encode($response);
+    exit;
+}
 
 // --- ACCIÓN: ACTUALIZAR PERFIL (NOMBRE DE USUARIO O CORREO) ---
 if ($action === 'update_profile') {

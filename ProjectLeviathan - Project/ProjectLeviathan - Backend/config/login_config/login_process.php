@@ -30,7 +30,7 @@ if ($action === 'login') {
         $response['message'] = 'Por favor, completa todos los campos.';
     } else {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
+            $stmt = $pdo->prepare("SELECT id, username, email, phone_number, password, role, created_at, status FROM users WHERE email = :email");
             $stmt->execute(['email' => $email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -60,6 +60,7 @@ if ($action === 'login') {
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['phone_number'] = $user['phone_number'];
                 $_SESSION['role'] = $user['role'];
+                $_SESSION['created_at'] = $user['created_at'];
 
                 $response['success'] = true;
                 $response['message'] = 'Inicio de sesión exitoso.';

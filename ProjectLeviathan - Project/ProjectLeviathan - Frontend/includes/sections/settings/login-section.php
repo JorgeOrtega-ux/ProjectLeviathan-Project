@@ -18,7 +18,7 @@
                         </div>
                         <div class="profile-card-info allow-wrap">
                             <strong>Contraseña</strong>
-                            <span>Última actualización de tu contraseña: 30 de septiembre de 2024</span>
+                            <span id="last-password-update">Cargando...</span>
                         </div>
                     </div>
                     <button class="edit-button" data-action="openUpdatePasswordModal">Actualizar</button>
@@ -48,7 +48,7 @@
                             <div class="delete-account-warning">
                                 <p>Esta acción es permanente y no se puede deshacer. Al continuar, perderás el acceso a todas tus comunidades, y cualquier contenido que hayas guardado.</p>
                                 <p class="account-creation-date">
-                                    <strong>Tu cuenta se creó el:</strong> 31 de octubre de 2023 a las 7:52 p.m.
+                                    <strong>Tu cuenta se creó el:</strong> <span id="account-creation-date">Cargando...</span>
                                 </p>
                             </div>
                         </div>

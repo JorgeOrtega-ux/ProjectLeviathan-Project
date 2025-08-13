@@ -537,6 +537,29 @@ function initMainController() {
             }
         });
     };
+    
+    const loadAccountDates = async () => {
+        const creationDateElem = document.getElementById('account-creation-date');
+        const lastUpdateElem = document.getElementById('last-password-update');
+
+        if (!creationDateElem || !lastUpdateElem) return;
+
+        try {
+            const response = await fetch(`${window.PROJECT_CONFIG.apiUrl}?action=get_account_dates`);
+            const data = await response.json();
+
+            if (data.success) {
+                creationDateElem.textContent = data.creation_date;
+                lastUpdateElem.textContent = data.last_password_update;
+            } else {
+                creationDateElem.textContent = 'No disponible';
+                lastUpdateElem.textContent = 'No disponible';
+            }
+        } catch (error) {
+            creationDateElem.textContent = 'Error al cargar';
+            lastUpdateElem.textContent = 'Error al cargar';
+        }
+    };
 
     const handleNavigationChange = (section, subsection = null, updateUrl = true) => {
         resetUIComponents();
@@ -557,6 +580,7 @@ function initMainController() {
             } else if (sub === 'login') {
                 setSubSectionActive(sectionLogin, [sectionProfile, sectionAccessibility],
                     toggleSectionLoginButton, [toggleSectionProfileButton, toggleSectionAccessibilityButton], 'login', updateUrl);
+                loadAccountDates();
             } else if (sub === 'accessibility') {
                 setSubSectionActive(sectionAccessibility, [sectionProfile, sectionLogin],
                     toggleSectionAccessibilityButton, [toggleSectionProfileButton, toggleSectionLoginButton], 'accessibility', updateUrl);
@@ -932,7 +956,18 @@ function initMainController() {
         window.addEventListener('resize', handleResize);
     }
     
+    // -- SOLUCIÓN AL PROBLEMA DE RECARGA --
+    // Se añade esta lógica para comprobar el estado inicial de la página
+    // y cargar los datos si es necesario.
+    const initializePageData = () => {
+        const initialState = getCurrentUrlState();
+        if (initialState && initialState.section === 'settings' && initialState.subsection === 'login') {
+            loadAccountDates();
+        }
+    };
+    
     setupEventListeners();
+    initializePageData(); // <--- LLAMADA A LA NUEVA FUNCIÓN
     
     const handleDragClose = () => {
         if (moduleOptions.classList.contains('active')) {
