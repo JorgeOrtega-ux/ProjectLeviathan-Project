@@ -148,8 +148,6 @@ function initMainController() {
         const formData = new FormData();
         formData.append('action', 'update_password');
         formData.append('current_password', currentPasswordInput.value);
-        formData.append('new_password', 'temp_new_password'); 
-        formData.append('confirm_password', 'temp_new_password');
         formData.append('csrf_token', window.PROJECT_CONFIG.csrfToken);
 
         const result = await sendPasswordRequest(formData, confirmErrorContainer);

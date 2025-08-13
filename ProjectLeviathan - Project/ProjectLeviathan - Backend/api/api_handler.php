@@ -129,6 +129,13 @@ if ($action === 'update_profile') {
             exit;
         }
 
+        // Si no se proporciona una nueva contraseña, es solo una verificación.
+        if (empty($new_password) && empty($confirm_password)) {
+            $response['success'] = true;
+            echo json_encode($response);
+            exit;
+        }
+        
         // 3. Verificar el límite de tiempo para el cambio (24 horas)
         if ($user['last_password_update'] !== null) {
             $last_update_time = new DateTime($user['last_password_update']);
@@ -142,9 +149,9 @@ if ($action === 'update_profile') {
             }
         }
         
-        // 4. Validar la nueva contraseña (esto se ejecuta solo en el guardado final)
-        if (empty($new_password) || empty($confirm_password)) {
-            $response['success'] = true; // Es para la transición de panel, no un error
+        // 4. Validar la nueva contraseña
+        if (password_verify($new_password, $user['password'])) {
+            $response['message'] = 'La nueva contraseña no puede ser igual a la actual.';
             echo json_encode($response);
             exit;
         }
