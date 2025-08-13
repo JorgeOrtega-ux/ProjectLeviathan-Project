@@ -81,6 +81,14 @@ function initMainController() {
     
     const logoutButton = document.querySelector('[data-action="logout"]');
 
+    // Elementos para el modal de eliminar cuenta
+    const deleteAccountModal = document.querySelector('[data-module="deleteAccountModal"]');
+    const openDeleteAccountModalButton = document.querySelector('[data-action="openDeleteAccountModal"]');
+    const closeDeleteAccountModalButtons = document.querySelectorAll('[data-action="closeDeleteAccountModal"]');
+    const confirmDeleteAccountButton = document.querySelector('[data-action="confirmDeleteAccount"]');
+    const deletePasswordInput = document.getElementById('delete-confirm-password');
+
+
     if (!toggleOptionsButton || !moduleOptions || !toggleSurfaceButton || !moduleSurface || !sectionHome || !sectionExplore || !sectionSettings || !sectionHelp) return;
 
     const menuContentOptions = moduleOptions.querySelector('.menu-content');
@@ -195,6 +203,62 @@ function initMainController() {
             errorContainer.textContent = 'Error de conexión. Inténtalo de nuevo.';
             errorContainer.style.display = 'block';
             return { success: false, message: 'Error de conexión.' };
+        }
+    };
+
+    const openDeleteAccountModal = () => {
+        if (!deleteAccountModal) return;
+        const errorContainer = deleteAccountModal.querySelector('.dialog-error-message');
+        if (deletePasswordInput) deletePasswordInput.value = '';
+        if (errorContainer) errorContainer.style.display = 'none';
+
+        deleteAccountModal.classList.remove('disabled');
+        requestAnimationFrame(() => {
+            deleteAccountModal.classList.add('active');
+        });
+    };
+
+    const closeDeleteAccountModal = () => {
+        if (!deleteAccountModal || !deleteAccountModal.classList.contains('active')) return false;
+        deleteAccountModal.classList.remove('active');
+        deleteAccountModal.addEventListener('transitionend', (e) => {
+            if (e.propertyName === 'opacity' && !deleteAccountModal.classList.contains('active')) {
+                deleteAccountModal.classList.add('disabled');
+            }
+        }, { once: true });
+        return true;
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!deletePasswordInput) return;
+        const errorContainer = deleteAccountModal.querySelector('.dialog-error-message');
+
+        const formData = new FormData();
+        formData.append('action', 'delete_account');
+        formData.append('password', deletePasswordInput.value);
+        formData.append('csrf_token', window.PROJECT_CONFIG.csrfToken);
+
+        try {
+            const response = await fetch(window.PROJECT_CONFIG.apiUrl, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Tu cuenta ha sido eliminada.');
+                window.location.href = result.redirect_url;
+            } else {
+                if(errorContainer) {
+                    errorContainer.textContent = result.message || 'Ocurrió un error.';
+                    errorContainer.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            if(errorContainer) {
+                errorContainer.textContent = 'Error de conexión. Inténtalo de nuevo.';
+                errorContainer.style.display = 'block';
+            }
         }
     };
 
@@ -336,6 +400,7 @@ function initMainController() {
         closeMenuOptions();
         closeMenuSurface();
         closeUpdatePasswordModal();
+        closeDeleteAccountModal();
     };
 
     const updateMainMenuButtons = (activeButton) => {
@@ -728,6 +793,18 @@ function initMainController() {
             saveNewPasswordButton.addEventListener('click', saveNewPassword);
         }
 
+        if (openDeleteAccountModalButton) {
+            openDeleteAccountModalButton.addEventListener('click', openDeleteAccountModal);
+        }
+
+        closeDeleteAccountModalButtons.forEach(button => {
+            button.addEventListener('click', closeDeleteAccountModal);
+        });
+
+        if (confirmDeleteAccountButton) {
+            confirmDeleteAccountButton.addEventListener('click', handleDeleteAccount);
+        }
+
         if (toggleSectionHomeButton) {
             toggleSectionHomeButton.addEventListener('click', () => {
                 if (!isSectionHomeActive) handleNavigationChange('home');
@@ -832,6 +909,13 @@ function initMainController() {
                     const dialogContent = updatePasswordModal.querySelector('.dialog-content');
                     if (dialogContent && !dialogContent.contains(e.target)) {
                         closeUpdatePasswordModal();
+                    }
+                }
+
+                if (deleteAccountModal && deleteAccountModal.classList.contains('active')) {
+                    const dialogContent = deleteAccountModal.querySelector('.dialog-content');
+                    if (dialogContent && !dialogContent.contains(e.target)) {
+                        closeDeleteAccountModal();
                     }
                 }
             });

@@ -183,6 +183,57 @@ if ($action === 'update_profile') {
 
     echo json_encode($response);
 
+// --- ACCIÓN: ELIMINAR CUENTA ---
+} elseif ($action === 'delete_account') {
+    $password = $_POST['password'] ?? '';
+    $userId = $_SESSION['user_id'] ?? 0;
+    
+    $response = ['success' => false];
+
+    if (empty($password) || empty($userId)) {
+        $response['message'] = 'Se requiere contraseña para eliminar la cuenta.';
+        echo json_encode($response);
+        exit;
+    }
+
+    try {
+        // 1. Obtener la contraseña actual del usuario
+        $stmt_user = $pdo->prepare("SELECT password FROM users WHERE id = :user_id");
+        $stmt_user->execute(['user_id' => $userId]);
+        $user = $stmt_user->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            $response['message'] = 'No se encontró el usuario.';
+            echo json_encode($response);
+            exit;
+        }
+
+        // 2. Verificar la contraseña
+        if (password_verify($password, $user['password'])) {
+            // Contraseña correcta, proceder a "eliminar"
+            $stmt_delete = $pdo->prepare("UPDATE users SET status = 'deleted' WHERE id = :user_id");
+            $stmt_delete->execute(['user_id' => $userId]);
+
+            // 3. Destruir la sesión
+            session_unset();
+            session_destroy();
+            
+            $response['success'] = true;
+            // Redirigir al directorio de login en la carpeta Backend
+            $response['redirect_url'] = '../'; 
+
+        } else {
+            // Contraseña incorrecta
+            $response['message'] = 'La contraseña es incorrecta.';
+        }
+
+    } catch (PDOException $e) {
+        $response['message'] = 'Error del servidor al intentar eliminar la cuenta.';
+        // error_log($e->getMessage());
+    }
+    
+    echo json_encode($response);
+
 } else {
     echo json_encode(['success' => false, 'message' => 'Acción no reconocida.']);
 }

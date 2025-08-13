@@ -53,7 +53,7 @@
                             </div>
                         </div>
                     </div>
-                    <button class="edit-button">Eliminar cuenta</button>
+                    <button class="edit-button" data-action="openDeleteAccountModal">Eliminar cuenta</button>
                 </div>
             </div>
         </div>

@@ -35,6 +35,26 @@ if ($action === 'login') {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && password_verify($password, $user['password'])) {
+                
+                // VERIFICACIÓN DE ESTADO DE CUENTA
+                if ($user['status'] !== 'active') {
+                    $message = 'Tu cuenta está inactiva. Contacta a soporte para más información.';
+                    switch ($user['status']) {
+                        case 'suspended':
+                            $message = 'Tu cuenta ha sido suspendida.';
+                            break;
+                        case 'banned':
+                            $message = 'Tu cuenta ha sido baneada permanentemente.';
+                            break;
+                        case 'deleted':
+                            $message = 'Esta cuenta de usuario ha sido eliminada.';
+                            break;
+                    }
+                    $response['message'] = $message;
+                    echo json_encode($response);
+                    exit;
+                }
+
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['email'] = $user['email'];
@@ -43,7 +63,6 @@ if ($action === 'login') {
 
                 $response['success'] = true;
                 $response['message'] = 'Inicio de sesión exitoso.';
-                // CORRECCIÓN: Ruta relativa para redirigir a la carpeta del Frontend
                 $response['redirect_url'] = '../ProjectLeviathan - Frontend/';
             } else {
                 $response['message'] = 'Correo o contraseña incorrectos.';

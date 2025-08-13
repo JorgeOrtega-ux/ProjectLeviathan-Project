@@ -9,20 +9,43 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// --- Actualizar rol y generar token CSRF ---
+// --- Actualizar rol, estado y generar token CSRF ---
 require_once __DIR__ . '/../ProjectLeviathan - Backend/config/db_config.php';
 
 try {
-    $stmt = $pdo->prepare("SELECT role FROM users WHERE id = :user_id");
+    $stmt = $pdo->prepare("SELECT role, status FROM users WHERE id = :user_id");
     $stmt->execute(['user_id' => $_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && isset($user['role'])) {
-        $_SESSION['role'] = $user['role'];
+    if ($user) {
+        // Si el estado no es 'active', destruir la sesión y redirigir
+        if ($user['status'] !== 'active') {
+            session_unset();
+            session_destroy();
+            $login_path = str_replace('ProjectLeviathan - Frontend', 'ProjectLeviathan - Backend/', getBaseUrl());
+            header('Location: ' . $login_path);
+            exit;
+        }
+
+        // Si todo está bien, actualizar el rol en la sesión
+        if (isset($user['role'])) {
+            $_SESSION['role'] = $user['role'];
+        }
+
+    } else {
+        // Si el usuario no se encuentra en la BD (p. ej., fue eliminado), destruir sesión
+        session_unset();
+        session_destroy();
+        $login_path = str_replace('ProjectLeviathan - Frontend', 'ProjectLeviathan - Backend/', getBaseUrl());
+        header('Location: ' . $login_path);
+        exit;
     }
+
 } catch (PDOException $e) {
-    // Silencio en caso de error
+    // En caso de error de DB, se podría mantener la sesión o cerrarla por seguridad.
+    // Por ahora, se mantiene en silencio para no afectar la experiencia si es un fallo temporal.
 }
+
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -119,8 +142,31 @@ require_once 'config/router.php';
             </div>
         </div>
     </div>
-    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+
+    <div class="module-content module-dialog disabled" data-module="deleteAccountModal">
+        <div class="dialog-content">
+            <div class="dialog-pane active" data-pane="confirmDelete">
+                <button class="dialog-close" data-action="closeDeleteAccountModal"><span class="material-symbols-rounded">close</span></button>
+                <div class="dialog-header">
+                    <h2>Eliminar tu cuenta</h2>
+                    <p>Esta acción es permanente. Para confirmar, por favor ingresa tu contraseña.</p>
+                </div>
+                <div class="dialog-body">
+                    <div class="input-group">
+                        <label for="delete-confirm-password">Contraseña</label>
+                        <input type="password" id="delete-confirm-password" class="edit-input" placeholder="Escribe tu contraseña para confirmar">
+                    </div>
+                    <div class="dialog-error-message" style="color: #d93025; font-size: 0.9rem; margin-top: 12px; display: none;"></div>
+                </div>
+                <div class="dialog-actions">
+                    <button class="cancel-button" data-action="closeDeleteAccountModal">Cancelar</button>
+                    <button class="save-button" data-action="confirmDeleteAccount" style="background-color: #d93025; border-color: #d93025;">Eliminar cuenta</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
+    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script type="module" src="<?php echo $BASE_URL; ?>/assets/js/app-init.js"></script>
 </body>
 
