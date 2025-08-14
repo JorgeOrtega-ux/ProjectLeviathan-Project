@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # La ruta base de tu proyecto de frontend
+  RewriteBase "/ProjectLeviathan - Project/ProjectLeviathan - Frontend/"
+  
+  # Si la petición no es para un archivo que existe
+  RewriteCond %{REQUEST_FILENAME} !-f
+  
+  # Ni para una carpeta que existe
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Redirige TODO a index.php para que tu router de PHP se encargue de la ruta
+  RewriteRule . index.php [L]
+</IfModule>
