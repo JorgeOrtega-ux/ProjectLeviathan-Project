@@ -1,0 +1,113 @@
+-- Creación de la base de datos
+CREATE DATABASE IF NOT EXISTS `project_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `project_db`;
+-- --------------------------------------------------------
+
+--
+-- Estructura de la tabla `users`
+-- Guarda la información principal de cada cuenta de usuario.
+--
+CREATE TABLE `users` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(32) NOT NULL,
+  `username` varchar(25) NOT NULL,
+  `email` varchar(126) NOT NULL,
+  `phone_number` varchar(20) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('user','vip','premium','elite','moderator','community-manager','admin','owner') NOT NULL DEFAULT 'user',
+  `status` enum('active','inactive','suspended','banned','deleted') NOT NULL DEFAULT 'active',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `uuid` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- --------------------------------------------------------
+CREATE TABLE `security_logs` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_identifier` varchar(126) NOT NULL COMMENT 'Email o identificador del usuario',
+  `ip_address` varchar(45) NOT NULL COMMENT 'Dirección IP del usuario',
+  `attempt_type` enum('login','password_reset','resend_code') NOT NULL COMMENT 'Tipo de intento',
+  `attempts` int(11) NOT NULL DEFAULT 1 COMMENT 'Intentos fallidos consecutivos',
+  `total_failures` int(11) NOT NULL DEFAULT 1 COMMENT 'Total de fallos históricos',
+  `last_attempt_at` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Último intento registrado',
+  `blocked_until` datetime DEFAULT NULL COMMENT 'Bloqueado hasta esta fecha/hora',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_identifier` (`user_identifier`),
+  KEY `ip_address` (`ip_address`),
+  KEY `attempt_type` (`attempt_type`),
+  KEY `blocked_until` (`blocked_until`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Índice compuesto para optimizar las consultas más comunes
+CREATE INDEX `idx_security_lookup` ON `security_logs` (`user_identifier`, `ip_address`, `attempt_type`);
+--
+-- Estructura de la tabla `user_preferences`
+-- Almacena todas las configuraciones de personalización del usuario.
+--
+CREATE TABLE `user_preferences` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `language` enum('es-MX','en-US') NOT NULL DEFAULT 'en-US',
+  `usage_type` enum('personal','commercial','educational') NOT NULL DEFAULT 'personal',
+  `open_links_in_new_tab` TINYINT(1) NOT NULL DEFAULT 1,
+  `show_sensitive_content` TINYINT(1) NOT NULL DEFAULT 0,
+  `theme` enum('system','light','dark') NOT NULL DEFAULT 'system',
+  `shortcuts_need_modifier` TINYINT(1) NOT NULL DEFAULT 0,
+  `high_contrast_colors` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  CONSTRAINT `user_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- --------------------------------------------------------
+
+--
+-- Estructura de la tabla `user_update_history`
+-- Registra cambios importantes en la cuenta, como actualizaciones de perfil y contraseña.
+--
+CREATE TABLE `user_update_history` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `field_changed` varchar(50) NOT NULL,
+  `old_value` text DEFAULT NULL,
+  `new_value` text DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `user_update_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- --------------------------------------------------------
+
+--
+-- Estructura de la tabla `users_metadata`
+-- Almacena metadatos asociados a la creación de la cuenta, como la IP y el User-Agent.
+--
+CREATE TABLE `users_metadata` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `user_agent` text NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `users_metadata_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- --------------------------------------------------------
+
+--
+-- Estructura de la tabla `verification_codes`
+-- Gestiona los códigos de un solo uso para la verificación de cuentas y el reseteo de contraseñas.
+--
+CREATE TABLE `verification_codes` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_email` varchar(126) NOT NULL,
+  `phone_number` varchar(20) NOT NULL,
+  `code` varchar(14) NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `type` enum('account_verification','password_reset') NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_email` (`user_email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
