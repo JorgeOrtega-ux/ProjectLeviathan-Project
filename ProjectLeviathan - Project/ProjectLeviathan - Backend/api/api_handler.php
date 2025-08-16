@@ -43,7 +43,7 @@ if ($action === 'get_municipality_groups') {
     }
     try {
         $stmt = $pdo->prepare(
-            "SELECT g.uuid, g.group_title, g.privacy, g.members, 
+            "SELECT g.uuid, g.group_title, g.privacy, g.members,
                     (gm.user_id IS NOT NULL) AS is_member
              FROM group_municipality g 
              LEFT JOIN group_members gm ON g.uuid = gm.group_uuid AND gm.user_id = :user_id AND gm.group_type = 'municipality'

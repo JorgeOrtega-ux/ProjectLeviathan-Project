@@ -88,20 +88,20 @@ function initMainController() {
     const deleteErrorContainer = deleteAccountDialog?.querySelector('.dialog-error-message');
     // --- FIN DE LA REFACTORIZACIÓN ---
     
-    // --- INICIO DE NUEVOS ELEMENTOS PARA EXPLORAR ---
-    const exploreSelectorButton = document.getElementById('explore-selector-button');
-    const exploreSelectorDropdown = document.getElementById('explore-selector-dropdown');
-    
-    const universityFilterGroup = document.getElementById('university-filter-group');
-    const universityMunicipalitySelectorButton = document.getElementById('university-municipality-selector-button');
-    const universityMunicipalitySelectorDropdown = document.getElementById('university-municipality-selector-dropdown');
-
-    const exploreBottom = document.querySelector('.explore-bottom');
-    const municipalitiesGrid = document.querySelector('.explore-content-section[data-section-id="for-you"] .community-cards-grid');
+    // --- LÓGICA PARA EXPLORAR ---
+    const exploreTabs = document.querySelector('.explore-tabs');
+    const searchInput = document.getElementById('community-search-input');
+    const municipalitiesGrid = document.querySelector('.explore-content-section[data-section-id="municipalities"] .community-cards-grid');
     const universitiesGrid = document.querySelector('.explore-content-section[data-section-id="universities"] .community-cards-grid');
-    let municipalitiesLoaded = false;
-    let universitiesLoaded = false;
-    // --- FIN DE NUEVOS ELEMENTOS PARA EXPLORAR ---
+    const loadMoreMunicipalitiesButton = document.querySelector('.load-more-button[data-type="municipalities"]');
+    const loadMoreUniversitiesButton = document.querySelector('.load-more-button[data-type="universities"]');
+
+    const ITEMS_PER_PAGE = 12;
+    let allMunicipalities = [];
+    let allUniversities = [];
+    let displayedMunicipalitiesCount = 0;
+    let displayedUniversitiesCount = 0;
+    let currentUniversityFilter = 'all';
 
 
     if (!toggleOptionsButton || !moduleOptions || !toggleSurfaceButton || !moduleSurface || !sectionHome || !sectionExplore || !sectionSettings || !sectionHelp) return;
@@ -385,7 +385,7 @@ function initMainController() {
     const closeAllSelectors = () => {
         let closed = false;
         document.querySelectorAll('[data-module="moduleSelector"].active').forEach(selector => {
-            const button = document.querySelector(`[aria-controls="${selector.id}"]`) || document.getElementById(selector.id.replace('-dropdown', '-button'));
+            const button = document.querySelector(`[aria-controls="${selector.id}"]`);
             if (button) {
                 button.classList.remove('active');
             }
@@ -559,6 +559,8 @@ function initMainController() {
     };
 
     const handleNavigationChange = (section, subsection = null, updateUrl = true) => {
+        const wasExploreActive = isSectionExploreActive;
+
         resetUIComponents();
 
         if (section === 'home') {
@@ -567,7 +569,11 @@ function initMainController() {
         } else if (section === 'explore') {
             setSectionActive(sectionExplore, [sectionHome, sectionSettings, sectionHelp], 'explore', updateUrl);
             updateMainMenuButtons('toggleSectionExplore');
-            loadMunicipalityGroups();
+            
+            if (allMunicipalities.length === 0) loadMunicipalityGroups();
+            if (allUniversities.length === 0) loadUniversityGroups(currentUniversityFilter);
+            
+            populateMunicipalityFilter();
         } else if (section === 'settings') {
             setSectionActive(sectionSettings, [sectionHome, sectionExplore, sectionHelp], 'settings', false);
 
@@ -600,6 +606,10 @@ function initMainController() {
                 setSubSectionActive(sectionSuggestions, [sectionPrivacy, sectionTerms, sectionCookies], 'suggestions', updateUrl);
                 updateHelpMenuButtons('toggleSectionSuggestions');
             }
+        }
+
+        if (wasExploreActive && section !== 'explore') {
+            resetExploreSection();
         }
 
         if (window.innerWidth <= 468) {
@@ -761,35 +771,82 @@ function initMainController() {
         }
     };
     
-    // --- LÓGICA PARA EXPLORAR ---
+    // --- LÓGICA PARA EXPLORAR (CON CARGAR MÁS) ---
+    const resetExploreSection = () => {
+        allMunicipalities = [];
+        allUniversities = [];
+        displayedMunicipalitiesCount = 0;
+        displayedUniversitiesCount = 0;
+        currentUniversityFilter = 'all';
+
+        if (municipalitiesGrid) municipalitiesGrid.innerHTML = '';
+        if (universitiesGrid) universitiesGrid.innerHTML = '';
+        if (searchInput) searchInput.value = '';
+
+        if (exploreTabs) {
+            exploreTabs.querySelector('.tab-item[data-tab="municipalities"]').classList.add('active');
+            exploreTabs.querySelector('.tab-item[data-tab="universities"]').classList.remove('active');
+        }
+        
+        document.querySelector('.explore-content-section[data-section-id="municipalities"]').classList.add('active');
+        document.querySelector('.explore-content-section[data-section-id="universities"]').classList.remove('active');
+
+        const universityFilterButton = document.getElementById('university-municipality-selector-button');
+        const universityFilterDropdown = document.getElementById('university-municipality-selector-dropdown');
+        if (universityFilterButton && universityFilterDropdown) {
+            universityFilterButton.querySelector('.selected-value-text').textContent = 'Filtrar por municipio';
+            universityFilterDropdown.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+            const allOption = universityFilterDropdown.querySelector('.menu-link[data-value="all"]');
+            if (allOption) allOption.classList.add('active');
+        }
+    };
+
+    const displayGroups = (sourceArray, gridElement, countState, buttonElement) => {
+        gridElement.innerHTML = '';
+        const groupsToDisplay = sourceArray.slice(0, countState);
+        
+        if (groupsToDisplay.length === 0 && sourceArray.length > 0) {
+             gridElement.innerHTML = '<p class="empty-grid-message">No se encontraron más comunidades.</p>';
+        } else if (sourceArray.length === 0) {
+             gridElement.innerHTML = '<p class="empty-grid-message">No hay comunidades para mostrar.</p>';
+        } else {
+            renderGroupCards(groupsToDisplay, gridElement);
+        }
+        
+        if (countState >= sourceArray.length) {
+            buttonElement.classList.add('hidden');
+        } else {
+            buttonElement.classList.remove('hidden');
+        }
+    };
+
     const loadMunicipalityGroups = async () => {
-        if (!municipalitiesGrid || municipalitiesLoaded) return;
         try {
             const response = await fetch(`${window.PROJECT_CONFIG.apiUrl}?action=get_municipality_groups`);
             const data = await response.json();
-            
             if (data.success) {
-                renderGroups(data.groups, municipalitiesGrid);
-                municipalitiesLoaded = true;
+                allMunicipalities = data.groups;
+                displayedMunicipalitiesCount = ITEMS_PER_PAGE;
+                displayGroups(allMunicipalities, municipalitiesGrid, displayedMunicipalitiesCount, loadMoreMunicipalitiesButton);
             } else {
                 municipalitiesGrid.innerHTML = `<p>${data.message || 'Error al cargar grupos.'}</p>`;
             }
         } catch (error) {
-            console.error('Error al cargar municipios:', error);
             municipalitiesGrid.innerHTML = '<p>Error de conexión.</p>';
         }
     };
 
-    const loadUniversityGroups = async (municipalityId = 'all') => {
-        if (!universitiesGrid) return;
-        universitiesGrid.innerHTML = '<div class="loader"></div>';
+    const loadUniversityGroups = async (municipalityId) => {
+        currentUniversityFilter = municipalityId;
+        universitiesGrid.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
         try {
             const response = await fetch(`${window.PROJECT_CONFIG.apiUrl}?action=get_university_groups&municipality_id=${municipalityId}`);
             const data = await response.json();
             
             if (data.success) {
-                renderGroups(data.groups, universitiesGrid, true);
-                universitiesLoaded = true;
+                allUniversities = data.groups;
+                displayedUniversitiesCount = ITEMS_PER_PAGE;
+                displayGroups(allUniversities, universitiesGrid, displayedUniversitiesCount, loadMoreUniversitiesButton);
             } else {
                 universitiesGrid.innerHTML = `<p>${data.message || 'Error al cargar universidades.'}</p>`;
             }
@@ -800,19 +857,31 @@ function initMainController() {
     };
 
     const populateMunicipalityFilter = async () => {
+        const universityMunicipalitySelectorDropdown = document.getElementById('university-municipality-selector-dropdown');
+        if (!universityMunicipalitySelectorDropdown) return;
+        
         try {
             const response = await fetch(`${window.PROJECT_CONFIG.apiUrl}?action=get_municipalities`);
             const data = await response.json();
             if(data.success) {
                 const menuList = universityMunicipalitySelectorDropdown.querySelector('.menu-list');
-                menuList.innerHTML = ''; 
+                if (!menuList) return;
+                menuList.innerHTML = '';
+                
+                let totalUniversities = 0;
+                data.municipalities.forEach(municipality => {
+                    totalUniversities += parseInt(municipality.university_count, 10);
+                });
 
                 const allOption = document.createElement('div');
                 allOption.className = 'menu-link active';
                 allOption.dataset.value = 'all';
                 allOption.innerHTML = `
                     <div class="menu-link-icon"><span class="material-symbols-rounded">public</span></div>
-                    <div class="menu-link-text"><span>Todos los municipios</span></div>
+                    <div class="menu-link-text">
+                        <span>Todos los municipios</span>
+                        <span class="menu-link-badge">${totalUniversities}</span>
+                    </div>
                 `;
                 menuList.appendChild(allOption);
 
@@ -835,12 +904,8 @@ function initMainController() {
         }
     };
 
-    const renderGroups = (groups, grid, isUniversity = false) => {
-        grid.innerHTML = '';
-        if (groups.length === 0) {
-            grid.innerHTML = '<p>No hay comunidades para mostrar en esta categoría.</p>';
-            return;
-        }
+    const renderGroupCards = (groups, grid) => {
+        grid.innerHTML = ''; // Limpiar antes de renderizar
         groups.forEach(group => {
             const isMember = group.is_member;
             const buttonText = isMember ? 'Abandonar' : 'Unirse';
@@ -848,32 +913,36 @@ function initMainController() {
             const card = document.createElement('div');
             card.className = 'community-card';
             card.dataset.groupUuid = group.uuid;
-            
-            const groupType = isUniversity ? 'university' : 'municipality';
+            card.dataset.groupName = group.group_title.toLowerCase();
+
+            const groupType = grid === universitiesGrid ? 'university' : 'municipality';
             card.dataset.groupType = groupType;
             
-            const subtitle = group.group_subtitle;
-            const icon = isUniversity ? 'school' : 'groups';
-            
+            const icon = grid === universitiesGrid ? 'school' : 'groups';
+
             card.innerHTML = `
                 <div class="card-header">
                     <div class="card-icon-wrapper">
                         <span class="material-symbols-rounded">${icon}</span>
                     </div>
-                    <button class="${buttonClass}" data-privacy="${group.privacy}">${buttonText}</button>
-                </div>
-                <div class="card-body">
-                    <h3 class="card-title">${group.group_title}</h3>
-                    <p class="card-text">${subtitle}</p>
-                </div>
-                <div class="card-footer">
-                    <div class="info-pill ${group.privacy}">
-                        <div class="pill-dot"></div>
-                        <span>${group.privacy === 'public' ? 'Público' : 'Privado'}</span>
+                    <div class="card-header-info">
+                        <h3 class="card-title">${group.group_title}</h3>
+                        <p class="card-subtitle">${group.group_subtitle}</p>
                     </div>
-                    <div class="info-pill members">
-                        <div class="pill-dot"></div>
-                        <span data-member-count>${group.members} Miembros</span>
+                </div>
+                <div class="card-content">
+                    <div class="card-footer">
+                        <div class="card-stats">
+                            <div class="info-pill">
+                                <span class="material-symbols-rounded">${group.privacy === 'public' ? 'public' : 'lock'}</span>
+                                <span>${group.privacy === 'public' ? 'Público' : 'Privado'}</span>
+                            </div>
+                            <div class="info-pill">
+                                <span class="material-symbols-rounded">group</span>
+                                <span data-member-count>${group.members}</span>
+                            </div>
+                        </div>
+                        <button class="${buttonClass}" data-privacy="${group.privacy}">${buttonText}</button>
                     </div>
                 </div>`;
             grid.appendChild(card);
@@ -907,82 +976,120 @@ function initMainController() {
             });
         }
         
-        if (exploreSelectorButton && exploreSelectorDropdown) {
-            exploreSelectorButton.addEventListener('click', (e) => {
+        if (exploreTabs) {
+            exploreTabs.addEventListener('click', (e) => {
+                const tabItem = e.target.closest('.tab-item');
+                if (!tabItem || tabItem.classList.contains('active')) return;
+
+                exploreTabs.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
+                tabItem.classList.add('active');
+
+                const targetTab = tabItem.dataset.tab;
+                document.querySelectorAll('.explore-content-section').forEach(section => {
+                    section.classList.toggle('active', section.dataset.sectionId === targetTab);
+                });
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                document.querySelectorAll('.community-card').forEach(card => {
+                    const groupName = card.dataset.groupName;
+                    card.style.display = groupName.includes(searchTerm) ? 'flex' : 'none';
+                });
+            });
+        }
+
+        if (loadMoreMunicipalitiesButton) {
+            loadMoreMunicipalitiesButton.addEventListener('click', () => {
+                displayedMunicipalitiesCount += ITEMS_PER_PAGE;
+                displayGroups(allMunicipalities, municipalitiesGrid, displayedMunicipalitiesCount, loadMoreMunicipalitiesButton);
+            });
+        }
+
+        if (loadMoreUniversitiesButton) {
+            loadMoreUniversitiesButton.addEventListener('click', () => {
+                displayedUniversitiesCount += ITEMS_PER_PAGE;
+                displayGroups(allUniversities, universitiesGrid, displayedUniversitiesCount, loadMoreUniversitiesButton);
+            });
+        }
+
+        document.querySelectorAll('[data-action="toggleSelector"]').forEach((button, index) => {
+            const parentControlGroup = button.closest('.profile-control-group, .explore-control-group');
+            if (!parentControlGroup) return;
+
+            const selectorDropdown = parentControlGroup.querySelector('[data-module="moduleSelector"]');
+            if (!selectorDropdown) return;
+
+            if (!selectorDropdown.id) {
+                selectorDropdown.id = `selector-dropdown-${index}`;
+            }
+            const popperId = selectorDropdown.id;
+            button.setAttribute('aria-controls', popperId);
+
+            button.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const isAlreadyActive = exploreSelectorDropdown.classList.contains('active');
-                closeAllSelectors();
-                if (!isAlreadyActive) {
-                    exploreSelectorDropdown.classList.remove('disabled');
-                    exploreSelectorDropdown.classList.add('active');
-                    exploreSelectorButton.classList.add('active');
+                const isAlreadyActive = selectorDropdown.classList.contains('active');
+
+                if (!allowMultipleActiveModules) {
+                    closeAllModules();
+                }
+
+                if (isAlreadyActive) {
+                    closeAllSelectors();
+                } else {
+                    selectorDropdown.classList.remove('disabled');
+                    selectorDropdown.classList.add('active');
+                    button.classList.add('active');
+
+                    popperInstances[popperId] = Popper.createPopper(button, selectorDropdown, {
+                        placement: 'bottom-start',
+                        modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
+                    });
                 }
             });
 
-            exploreSelectorDropdown.addEventListener('click', (e) => {
+            selectorDropdown.addEventListener('click', (e) => {
                 const link = e.target.closest('.menu-link');
-                if (!link || link.classList.contains('active')) return;
+                if (!link) return;
 
-                const textSpan = exploreSelectorButton.querySelector('.selected-value-text');
-                const iconSpan = exploreSelectorButton.querySelector('.selected-value-icon.left .material-symbols-rounded');
-                textSpan.textContent = link.querySelector('.menu-link-text span').textContent;
-                iconSpan.textContent = link.dataset.icon;
+                const newTextSpan = link.querySelector('.menu-link-text span');
+                const newText = newTextSpan ? newTextSpan.textContent : '';
 
-                exploreSelectorDropdown.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-
-                const targetSectionId = link.dataset.targetSection;
-                
-                if(exploreBottom) {
-                    exploreBottom.querySelectorAll('.explore-content-section').forEach(section => {
-                        section.classList.toggle('active', section.dataset.sectionId === targetSectionId);
-                    });
+                if (button.querySelector('.selected-value-text')) {
+                    button.querySelector('.selected-value-text').textContent = newText;
                 }
+
+                const newIcon = link.querySelector('.menu-link-icon .material-symbols-rounded');
+                const selectedValueIconLeft = button.querySelector('.selected-value-icon.left .material-symbols-rounded');
+                if (selectedValueIconLeft && newIcon) {
+                    selectedValueIconLeft.textContent = newIcon.textContent;
+                }
+
+                selectorDropdown.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
                 
-                if (targetSectionId === 'universities') {
-                    universityFilterGroup.classList.remove('disabled');
-                    loadUniversityGroups();
-                    populateMunicipalityFilter();
-                } else {
-                    universityFilterGroup.classList.add('disabled');
-                    if (targetSectionId === 'for-you') {
-                        loadMunicipalityGroups();
+                const parentItem = button.closest('[data-preference-field]');
+                if (parentItem) {
+                    const preferenceField = parentItem.dataset.preferenceField;
+                    const newValue = link.dataset.value;
+                    handlePreferenceUpdate(preferenceField, newValue);
+                    if (preferenceField === 'theme') {
+                        applyTheme(newValue);
                     }
                 }
                 
-                closeAllSelectors();
-            });
-        }
-
-        if(universityMunicipalitySelectorButton && universityMunicipalitySelectorDropdown) {
-            universityMunicipalitySelectorButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                 const isAlreadyActive = universityMunicipalitySelectorDropdown.classList.contains('active');
-                closeAllSelectors();
-                if (!isAlreadyActive) {
-                    universityMunicipalitySelectorDropdown.classList.remove('disabled');
-                    universityMunicipalitySelectorDropdown.classList.add('active');
-                    universityMunicipalitySelectorButton.classList.add('active');
+                if (button.id === 'university-municipality-selector-button') {
+                     const municipalityId = link.dataset.value;
+                     loadUniversityGroups(municipalityId);
                 }
-            });
 
-            universityMunicipalitySelectorDropdown.addEventListener('click', (e) => {
-                const link = e.target.closest('.menu-link');
-                if (!link || link.classList.contains('active')) return;
-
-                const textSpan = universityMunicipalitySelectorButton.querySelector('.selected-value-text');
-                textSpan.textContent = link.querySelector('.menu-link-text span').textContent;
-
-                universityMunicipalitySelectorDropdown.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-
-                const municipalityId = link.dataset.value;
-                loadUniversityGroups(municipalityId);
                 closeAllSelectors();
             });
-        }
+        });
         
-        document.querySelector('.explore-bottom').addEventListener('click', async (e) => {
+        document.querySelector('.explore-content').addEventListener('click', async (e) => {
             const joinButton = e.target.closest('.join-button');
             if (!joinButton) return;
 
@@ -1024,7 +1131,7 @@ function initMainController() {
                         alert(result.message);
                     } else {
                         const memberCountSpan = card.querySelector('[data-member-count]');
-                        memberCountSpan.textContent = `${result.newMemberCount} Miembros`;
+                        memberCountSpan.textContent = `${result.newMemberCount}`;
                         if (result.action === 'joined') {
                             joinButton.textContent = 'Abandonar';
                             joinButton.classList.add('leave');
@@ -1070,7 +1177,7 @@ function initMainController() {
                         if (card) {
                             const memberCountSpan = card.querySelector('[data-member-count]');
                             const joinButton = card.querySelector('.join-button');
-                            memberCountSpan.textContent = `${result.newMemberCount} Miembros`;
+                            memberCountSpan.textContent = `${result.newMemberCount}`;
                             joinButton.textContent = 'Abandonar';
                             joinButton.classList.add('leave');
                         }
@@ -1097,80 +1204,6 @@ function initMainController() {
                 input.value = formattedValue;
             });
         }
-
-        customSelectorButtons.forEach((button, index) => {
-            const parentControlGroup = button.closest('.profile-control-group');
-            if (!parentControlGroup || button.id.includes('explore-selector') || button.id.includes('university-municipality-selector')) return;
-
-
-            const selectorDropdown = parentControlGroup.querySelector('[data-module="moduleSelector"]');
-            if (!selectorDropdown) return;
-
-            const popperId = `selector-${index}`;
-            selectorDropdown.id = popperId;
-            button.setAttribute('aria-controls', popperId);
-
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isAlreadyActive = selectorDropdown.classList.contains('active');
-
-                if (!allowMultipleActiveModules) {
-                    closeAllModules();
-                }
-
-                if (isAlreadyActive) {
-                    closeAllSelectors();
-                } else {
-                    selectorDropdown.classList.remove('disabled');
-                    selectorDropdown.classList.add('active');
-                    button.classList.add('active');
-
-                    popperInstances[popperId] = Popper.createPopper(button, selectorDropdown, {
-                        placement: 'bottom-start',
-                        modifiers: [
-                            {
-                                name: 'offset',
-                                options: {
-                                    offset: [0, 8],
-                                },
-                            },
-                        ],
-                    });
-                }
-            });
-
-            selectorDropdown.querySelectorAll('.menu-link').forEach(link => {
-                link.addEventListener('click', () => {
-                    const newText = link.querySelector('.menu-link-text span').textContent;
-                    if (button.querySelector('.selected-value-text')) {
-                        button.querySelector('.selected-value-text').textContent = newText;
-                    }
-
-                    const newIcon = link.querySelector('.menu-link-icon .material-symbols-rounded');
-                    const selectedValueIconLeft = button.querySelector('.selected-value-icon.left .material-symbols-rounded');
-                    if (selectedValueIconLeft && newIcon) {
-                        selectedValueIconLeft.textContent = newIcon.textContent;
-                    }
-
-                    selectorDropdown.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
-                    link.classList.add('active');
-                    
-                    const parentItem = button.closest('[data-preference-field]');
-                    if (parentItem) {
-                        const preferenceField = parentItem.dataset.preferenceField;
-                        const newValue = link.dataset.value;
-                        
-                        handlePreferenceUpdate(preferenceField, newValue);
-                        
-                        if (preferenceField === 'theme') {
-                            applyTheme(newValue);
-                        }
-                    }
-
-                    closeAllSelectors();
-                });
-            });
-        });
 
         document.querySelectorAll('.toggle-switch input[type="checkbox"]').forEach(toggle => {
             toggle.addEventListener('change', (e) => {
@@ -1363,7 +1396,7 @@ function initMainController() {
 
                 const activeSelector = document.querySelector('[data-module="moduleSelector"].active');
                 if (activeSelector) {
-                    const selectorButton = document.querySelector(`[aria-controls="${activeSelector.id}"]`) || document.getElementById(activeSelector.id.replace('-dropdown', '-button'));
+                    const selectorButton = document.querySelector(`[aria-controls="${activeSelector.id}"]`);
                     if (selectorButton && !selectorButton.contains(e.target) && !activeSelector.contains(e.target)) {
                         closeAllSelectors();
                     }
@@ -1399,6 +1432,8 @@ function initMainController() {
         }
         if (initialState && initialState.section === 'explore') {
             loadMunicipalityGroups();
+            loadUniversityGroups(currentUniversityFilter);
+            populateMunicipalityFilter();
         }
         initializePreferenceControls();
     };
