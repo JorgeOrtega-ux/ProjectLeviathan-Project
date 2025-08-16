@@ -33,8 +33,8 @@ if ($action === 'get_user_groups') {
                     WHEN gm.group_type = 'university' THEN u.group_title
                 END AS group_title,
                 CASE
-                    WHEN gm.group_type = 'municipality' THEN 'Un espacio para la comunidad de ' || m.group_title
-                    WHEN gm.group_type = 'university' THEN 'Comunidad de ' || u.group_title
+                    WHEN gm.group_type = 'municipality' THEN CONCAT('Un espacio para la comunidad de ', m.group_title)
+                    WHEN gm.group_type = 'university' THEN CONCAT('Comunidad de ', u.group_title)
                 END AS group_subtitle,
                 gm.group_type,
                 CASE

@@ -968,9 +968,7 @@ function initMainController() {
     };
     
     const refreshHomeView = () => {
-        if (isSectionHomeActive) {
-            loadHomeContent();
-        }
+        loadHomeContent();
     };
 
     const renderDashboardView = (groups) => {

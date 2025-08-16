@@ -581,6 +581,8 @@ body {
 
 .explore-header {
     padding: 40px 24px;
+    margin: 24px;
+    border-radius: 12px;
     text-align: center;
     background: linear-gradient(135deg, #2c3e50, #000000);
     position: relative;
@@ -1022,6 +1024,8 @@ body {
 
 .home-final-hero {
     padding: 40px 24px;
+    margin: 24px;
+    border-radius: 12px;
     text-align: center;
     background: linear-gradient(135deg, #2c3e50, #000000);
     color: var(--color-white);
@@ -1056,7 +1060,7 @@ body {
 }
 
 .home-final-search-bar .search-input:focus {
-     background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
 .home-final-search-bar .search-icon {
@@ -1187,11 +1191,14 @@ body {
 }
 
 @media (max-width: 768px) {
-    .explore-header h1, .home-final-hero h1 {
+
+    .explore-header h1,
+    .home-final-hero h1 {
         font-size: 2rem;
     }
 
-    .explore-header p, .home-final-hero p {
+    .explore-header p,
+    .home-final-hero p {
         font-size: 1rem;
     }
 
