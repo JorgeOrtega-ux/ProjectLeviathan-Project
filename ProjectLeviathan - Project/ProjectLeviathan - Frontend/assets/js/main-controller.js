@@ -566,6 +566,7 @@ function initMainController() {
         if (section === 'home') {
             setSectionActive(sectionHome, [sectionExplore, sectionSettings, sectionHelp], 'home', updateUrl);
             updateMainMenuButtons('toggleSectionHome');
+            loadHomeContent(); // --- ACTUALIZACIÓN: Cargar contenido de Home al navegar ---
         } else if (section === 'explore') {
             setSectionActive(sectionExplore, [sectionHome, sectionSettings, sectionHelp], 'explore', updateUrl);
             updateMainMenuButtons('toggleSectionExplore');
@@ -949,6 +950,117 @@ function initMainController() {
         });
     };
     // --- FIN DE LÓGICA PARA EXPLORAR ---
+    
+    // --- INICIO DE LA LÓGICA DINÁMICA PARA HOME ---
+    const loadHomeContent = async () => {
+        try {
+            const response = await fetch(`${window.PROJECT_CONFIG.apiUrl}?action=get_user_groups`);
+            const data = await response.json();
+            if (data.success && data.groups.length > 0) {
+                renderDashboardView(data.groups);
+            } else {
+                renderDiscoveryView();
+            }
+        } catch (error) {
+            console.error("Error loading user groups, showing discovery view.", error);
+            renderDiscoveryView();
+        }
+    };
+    
+    const refreshHomeView = () => {
+        if (isSectionHomeActive) {
+            loadHomeContent();
+        }
+    };
+
+    const renderDashboardView = (groups) => {
+        const homeTabs = document.getElementById('home-tabs');
+        const homeGrid = document.getElementById('home-grid');
+
+        homeTabs.innerHTML = `
+            <div class="tab-item active" data-tab="my-communities">
+                <span class="material-symbols-rounded">groups</span>
+                <span>Mis Comunidades</span>
+            </div>
+            <div class="tab-item" data-tab="activity-feed">
+                <span class="material-symbols-rounded">feed</span>
+                <span>Actividad Reciente</span>
+            </div>
+        `;
+
+        let gridHTML = '';
+        groups.forEach(group => {
+            const icon = group.group_type === 'university' ? 'school' : 'groups';
+            gridHTML += `
+                <div class="home-community-card">
+                    <div class="home-card-header">
+                        <div class="home-card-icon-wrapper">
+                            <span class="material-symbols-rounded">${icon}</span>
+                        </div>
+                        <div class="home-card-info">
+                            <h3 class="home-card-title">${group.group_title}</h3>
+                            <p class="home-card-subtitle">${group.group_subtitle}</p>
+                        </div>
+                    </div>
+                    <div class="home-card-footer">
+                        <span class="home-card-members">${group.members} miembros</span>
+                        <button class="home-card-join-button view">Ver</button>
+                    </div>
+                </div>
+            `;
+        });
+        homeGrid.innerHTML = gridHTML;
+    };
+
+    const renderDiscoveryView = () => {
+        const homeTabs = document.getElementById('home-tabs');
+        const homeGrid = document.getElementById('home-grid');
+
+        homeTabs.innerHTML = `
+            <div class="tab-item active" data-tab="recommendations">
+                <span class="material-symbols-rounded">recommend</span>
+                <span>Recomendaciones</span>
+            </div>
+            <div class="tab-item" data-tab="trending">
+                <span class="material-symbols-rounded">local_fire_department</span>
+                <span>Tendencias</span>
+            </div>
+        `;
+
+        homeGrid.innerHTML = `
+            <div class="home-community-card">
+                <div class="home-card-header">
+                    <div class="home-card-icon-wrapper">
+                        <span class="material-symbols-rounded">groups</span>
+                    </div>
+                    <div class="home-card-info">
+                        <h3 class="home-card-title">Comunidad de Victoria</h3>
+                        <p class="home-card-subtitle">Espacio para los residentes de la capital.</p>
+                    </div>
+                </div>
+                <div class="home-card-footer">
+                    <span class="home-card-members">1,234 miembros</span>
+                    <button class="home-card-join-button">Unirse</button>
+                </div>
+            </div>
+            <div class="home-community-card">
+                 <div class="home-card-header">
+                    <div class="home-card-icon-wrapper">
+                        <span class="material-symbols-rounded">school</span>
+                    </div>
+                    <div class="home-card-info">
+                        <h3 class="home-card-title">Universidad Politécnica</h3>
+                        <p class="home-card-subtitle">Comunidad oficial de estudiantes.</p>
+                    </div>
+                </div>
+                <div class="home-card-footer">
+                    <span class="home-card-members">567 miembros</span>
+                    <button class="home-card-join-button">Unirse</button>
+                </div>
+            </div>
+        `;
+    };
+    // --- FIN DE LA LÓGICA DINÁMICA ---
 
     function setupEventListeners() {
         toggleOptionsButton.addEventListener('click', (e) => {
@@ -1139,6 +1251,7 @@ function initMainController() {
                             joinButton.textContent = 'Unirse';
                             joinButton.classList.remove('leave');
                         }
+                        refreshHomeView(); // --- ACTUALIZACIÓN: Refrescar Home al cambiar membresía ---
                     }
                 } else {
                     alert(result.message || 'Ocurrió un error.');
@@ -1181,6 +1294,7 @@ function initMainController() {
                             joinButton.textContent = 'Abandonar';
                             joinButton.classList.add('leave');
                         }
+                        refreshHomeView(); // --- ACTUALIZACIÓN: Refrescar Home al cambiar membresía ---
                     } else {
                         errorContainer.textContent = result.message || 'Ocurrió un error.';
                         errorContainer.style.display = 'block';
@@ -1427,16 +1541,22 @@ function initMainController() {
 
     const initializePageData = () => {
         const initialState = getCurrentUrlState();
-        if (initialState && initialState.section === 'settings' && initialState.subsection === 'login') {
-            loadAccountDates();
-        }
-        if (initialState && initialState.section === 'explore') {
-            loadMunicipalityGroups();
-            loadUniversityGroups(currentUniversityFilter);
-            populateMunicipalityFilter();
+        if (initialState) {
+            if (initialState.section === 'home') {
+                loadHomeContent();
+            }
+            if (initialState.section === 'settings' && initialState.subsection === 'login') {
+                loadAccountDates();
+            }
+            if (initialState.section === 'explore') {
+                loadMunicipalityGroups();
+                loadUniversityGroups(currentUniversityFilter);
+                populateMunicipalityFilter();
+            }
         }
         initializePreferenceControls();
     };
+
 
     setupEventListeners();
     initializePageData();

@@ -15,6 +15,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (empty($_POST['csrf_token']) || emp
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $userId = $_SESSION['user_id'] ?? 0;
 
+// --- ACCIÓN: OBTENER GRUPOS DEL USUARIO ---
+if ($action === 'get_user_groups') {
+    if (empty($userId)) {
+        echo json_encode(['success' => false, 'message' => 'Usuario no autenticado.']);
+        exit;
+    }
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT 
+                CASE
+                    WHEN gm.group_type = 'municipality' THEN m.uuid
+                    WHEN gm.group_type = 'university' THEN u.uuid
+                END AS uuid,
+                CASE
+                    WHEN gm.group_type = 'municipality' THEN m.group_title
+                    WHEN gm.group_type = 'university' THEN u.group_title
+                END AS group_title,
+                CASE
+                    WHEN gm.group_type = 'municipality' THEN 'Un espacio para la comunidad de ' || m.group_title
+                    WHEN gm.group_type = 'university' THEN 'Comunidad de ' || u.group_title
+                END AS group_subtitle,
+                gm.group_type,
+                CASE
+                    WHEN gm.group_type = 'municipality' THEN m.members
+                    WHEN gm.group_type = 'university' THEN u.members
+                END AS members
+             FROM group_members gm
+             LEFT JOIN group_municipality m ON gm.group_uuid = m.uuid AND gm.group_type = 'municipality'
+             LEFT JOIN group_university u ON gm.group_uuid = u.uuid AND gm.group_type = 'university'
+             WHERE gm.user_id = :user_id"
+        );
+        $stmt->execute(['user_id' => $userId]);
+        $groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'groups' => $groups]);
+    } catch (PDOException $e) {
+        error_log("API Error (get_user_groups): " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error del servidor al obtener tus grupos.']);
+    }
+    exit;
+}
+
+
 // --- ACCIÓN: OBTENER TODOS LOS MUNICIPIOS ---
 if ($action === 'get_municipalities') {
     try {
